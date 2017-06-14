@@ -2,11 +2,16 @@
 [![Build Status](https://travis-ci.org/the-tinderbox/ClickhouseBuilder.svg?branch=master)](https://travis-ci.org/the-tinderbox/ClickhouseBuilder)
 
 # Requirements
+
 `php 7.1`
 
 # Install
+
 Via composer
-`composer require tinderbox/clickhouse-builder`
+
+```bash
+composer require the-tinderbox/clickhouse-builder
+```
 
 # Usage
 For working query builder we must previously instantiate and pass in constructor `the-tinderbox/clickhouse-php-client`.

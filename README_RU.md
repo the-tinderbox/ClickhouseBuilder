@@ -9,21 +9,8 @@
 
 Composer
 
-Добавьте в свой composer.json:
-
-```json
-"repositories": [
-    {
-        "type": "composer",
-        "url": "https://packages.devspark.ru"
-    }
-]
-```
-
-А затем выполните:
-
 ```bash
-composer require tinderbox/clickhouse-builder
+composer require the-tinderbox/clickhouse-builder
 ```
 
 # Using
