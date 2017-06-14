@@ -1,0 +1,44 @@
+{
+  "name": "the-tinderbox/clickhouse-builder",
+  "description": "Clickhouse sql query builder",
+  "authors": [
+    {
+      "name": "FacedSID",
+      "email": "ay@imagespark.ru"
+    },
+    {
+      "name": "Evsign",
+      "email": "evsign.alex@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Tinderbox\\ClickhouseBuilder\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tinderbox\\ClickhouseBuilder\\": "tests"
+    },
+    "files": [
+      "src/functions.php"
+    ]
+  },
+  "require": {
+    "php": "~7.1",
+    "myclabs/php-enum": "^1.5",
+    "the-tinderbox/clickhouse-php-client": "^1.0"
+  },
+  "require-dev": {
+    "illuminate/database": "^5.4",
+    "phpunit/phpunit": "^6.1",
+    "mockery/mockery": "^0.9.9",
+    "illuminate/events": "^5.4",
+    "illuminate/config": "^5.4"
+  },
+  "scripts": {
+    "test": "phpunit --coverage-text --colors=never",
+    "check-style": "phpcs -p --standard=PSR2 --runtime-set ignore_errors_on_exit 1 --runtime-set ignore_warnings_on_exit 1 src tests",
+    "fix-style": "phpcbf -p --standard=PSR2 --runtime-set ignore_errors_on_exit 1 --runtime-set ignore_warnings_on_exit 1 src tests"
+  }
+}
