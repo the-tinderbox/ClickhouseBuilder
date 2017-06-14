@@ -268,14 +268,26 @@ $builder->whereNotBetweenColumns();
 $builder->orWhereNotBetweenColumns();
 ```
 
-Aside this there are two methods for performing where by dictionary. They work like hacks) They add column into select
-with dictionary and then perform where by its alias.
+Also there is method to make where by dictionary:
 
 ```php
 $builder->whereDict('dict', 'attribute', 'key', '=', 'value');
 ```
+
 ```sql
 SELECT dictGetString('dict', 'attribute', 'key') as `attribute` WHERE `attribute` = 'value' 
+```
+
+If you want to use complex key, you may pass an array as `$key`, then array will be converted to tuple. By default all strings will be escaped by single quotes, but you may pass an `Identifier` instance to pass for example column name:
+
+```php
+$builder->whereDict('dict', 'attribute', [new Identifier('column'), 'string value'], '=', 'value');
+```
+
+Will produce:
+
+```sql
+SELECT dictGetString('dict', 'attribute', tuple(`column`, 'string value')) as `attribute` WHERE `attribute` = 'value' 
 ```
 
 ### Group By
