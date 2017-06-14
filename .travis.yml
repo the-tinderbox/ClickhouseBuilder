@@ -3,11 +3,17 @@ language: php
 php:
   - '7.1'
 
+before_install:
+  - composer require satooshi/php-coveralls:dev-master
+
 before_script:
   - composer self-update
   - composer install --prefer-source --dev
 
-script: phpunit --coverage-text --colors=never
+script: phpunit --coverage-clover ./tests/logs/clover.xml
+
+after_script:
+ - php vendor/bin/coveralls -v
 
 notifications:
     on_success: never
