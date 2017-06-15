@@ -7,7 +7,7 @@ use Tinderbox\Clickhouse\Client;
 class Builder extends BaseBuilder
 {
     /**
-     * Client which is used to perform queries
+     * Client which is used to perform queries.
      *
      * @var \Tinderbox\Clickhouse\Client
      */
@@ -27,9 +27,9 @@ class Builder extends BaseBuilder
     /**
      * Perform compiled from builder sql query and getting result.
      *
-     * @return \Tinderbox\Clickhouse\Query\Result|\Tinderbox\Clickhouse\Query\Result[]
-     *
      * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
+     *
+     * @return \Tinderbox\Clickhouse\Query\Result|\Tinderbox\Clickhouse\Query\Result[]
      */
     public function get()
     {
@@ -58,9 +58,9 @@ class Builder extends BaseBuilder
      * @param string $format
      * @param int    $concurrency
      *
-     * @return array
-     *
      * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
+     *
+     * @return array
      */
     public function insertFiles(array $columns, array $files, string $format = \Tinderbox\Clickhouse\Common\Format::CSV, int $concurrency = 5) : array
     {

@@ -9,10 +9,10 @@ use Tinderbox\ClickhouseBuilder\Query\From;
 trait FromComponentCompiler
 {
     /**
-     * Compiles format statement
+     * Compiles format statement.
      *
      * @param BaseBuilder $builder
-     * @param         $from
+     * @param             $from
      *
      * @return string
      */
@@ -27,20 +27,19 @@ trait FromComponentCompiler
         $fromSection = '';
         $fromSection .= "FROM {$this->wrap($table)}";
 
-        if (! is_null($alias)) {
-
+        if (!is_null($alias)) {
             $fromSection .= " AS {$this->wrap($alias)}";
         }
 
-        if (! is_null($final)) {
-            $fromSection .= " FINAL";
+        if (!is_null($final)) {
+            $fromSection .= ' FINAL';
         }
 
         return $fromSection;
     }
-    
+
     /**
-     * Verifies from
+     * Verifies from.
      *
      * @param From $from
      *
@@ -52,5 +51,4 @@ trait FromComponentCompiler
             throw GrammarException::wrongFrom($from);
         }
     }
-
 }

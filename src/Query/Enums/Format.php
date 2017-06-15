@@ -5,7 +5,7 @@ namespace Tinderbox\ClickhouseBuilder\Query\Enums;
 use MyCLabs\Enum\Enum;
 
 /**
- * Formats
+ * Formats.
  */
 final class Format extends Enum
 {
@@ -14,7 +14,7 @@ final class Format extends Enum
     public const CSV_WITH_NAMES = 'CSVWithNames';
     public const JSON = 'JSON';
     public const JSON_COMPACT = 'JSONCompact';
-    public const JSON_EACH_ROW ='JSONEachRow';
+    public const JSON_EACH_ROW = 'JSONEachRow';
     public const NATIVE = 'Native';
     public const NULL = 'Null';
     public const PRETTY = 'Pretty';
@@ -33,5 +33,4 @@ final class Format extends Enum
     public const VALUES = 'Values';
     public const VERTICAL = 'Vertical';
     public const XML = 'XML';
-
 }

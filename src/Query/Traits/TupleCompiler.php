@@ -7,7 +7,7 @@ use Tinderbox\ClickhouseBuilder\Query\Tuple;
 trait TupleCompiler
 {
     /**
-     * Compiles tuple to string to use this string in query
+     * Compiles tuple to string to use this string in query.
      *
      * @param Tuple $tuple
      *
@@ -15,6 +15,6 @@ trait TupleCompiler
      */
     public function compileTuple(Tuple $tuple) : string
     {
-        return implode(", ", array_map([$this, 'wrap'], $tuple->getElements()));
+        return implode(', ', array_map([$this, 'wrap'], $tuple->getElements()));
     }
 }

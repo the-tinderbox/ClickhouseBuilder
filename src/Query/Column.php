@@ -5,21 +5,21 @@ namespace Tinderbox\ClickhouseBuilder\Query;
 class Column
 {
     /**
-     * Column name
+     * Column name.
      *
      * @var Identifier|Expression|null
      */
     private $columnName;
 
     /**
-     * Column alias
+     * Column alias.
      *
      * @var Identifier|null
      */
     private $alias;
 
     /**
-     * Functions applied to column
+     * Functions applied to column.
      *
      * Multidimensional array:
      * [['function' => 'functionName', 'params' => 'params'], []]
@@ -31,7 +31,7 @@ class Column
     private $functions = [];
 
     /**
-     * Used for sub-queries
+     * Used for sub-queries.
      *
      * Stored here for ability to merge bindings from sub-query with query
      *
@@ -40,7 +40,7 @@ class Column
     private $query;
 
     /**
-     * Used for sub-queries, which executes not in callback
+     * Used for sub-queries, which executes not in callback.
      *
      * @var Builder|null
      */
@@ -57,7 +57,7 @@ class Column
     }
 
     /**
-     * Set column name
+     * Set column name.
      *
      * @param string|Expression $columnName
      *
@@ -79,7 +79,7 @@ class Column
     }
 
     /**
-     * Set alias for column
+     * Set alias for column.
      *
      * @param string $alias
      *
@@ -93,9 +93,10 @@ class Column
     }
 
     /**
-     * Alias for as method
+     * Alias for as method.
      *
      * @param string $alias
+     *
      * @return Column
      */
     public function alias(string $alias) : self
@@ -104,7 +105,7 @@ class Column
     }
 
     /**
-     * Converts expression to string
+     * Converts expression to string.
      *
      * @param $expression
      *
@@ -114,9 +115,9 @@ class Column
     {
         if (is_array($expression)) {
             $expression = array_map(function ($element) {
-                return (string)$element;
+                return (string) $element;
             }, $expression);
-            
+
             return implode(' ', $expression);
         }
 
@@ -124,7 +125,7 @@ class Column
     }
 
     /**
-     * Get column name
+     * Get column name.
      *
      * @return Identifier|Expression|null
      */
@@ -134,7 +135,7 @@ class Column
     }
 
     /**
-     * Get column alias
+     * Get column alias.
      *
      * @return Identifier|null
      */
@@ -144,7 +145,7 @@ class Column
     }
 
     /**
-     * Get functions applied to column
+     * Get functions applied to column.
      *
      * @return array
      */
@@ -154,7 +155,7 @@ class Column
     }
 
     /**
-     * Get sub-query
+     * Get sub-query.
      *
      * @return Builder|null
      */
@@ -164,7 +165,7 @@ class Column
     }
 
     /**
-     * Apply runningDIfference function to column
+     * Apply runningDIfference function to column.
      *
      * @return $this
      */
@@ -176,9 +177,10 @@ class Column
     }
 
     /**
-     * Apply sumIf function to column
+     * Apply sumIf function to column.
      *
      * @param array|mixed $expression
+     *
      * @return $this
      */
     public function sumIf($expression = [])
@@ -191,9 +193,9 @@ class Column
 
         return $this;
     }
-    
+
     /**
-     * Apply plus function to column
+     * Apply plus function to column.
      *
      * @param $value
      *
@@ -202,9 +204,9 @@ class Column
     public function plus($value)
     {
         $value = $this->expressionToString($value);
-        
+
         $this->functions[] = ['function' => 'plus', 'params' => $value];
-        
+
         return $this;
     }
 
@@ -215,22 +217,22 @@ class Column
     public function count()
     {
         $this->functions[] = ['function' => 'count'];
-        
+
         return $this;
     }
-    
+
     /**
-     * Apply distinct function to column
+     * Apply distinct function to column.
      */
     public function distinct()
     {
         $this->functions[] = ['function' => 'distinct'];
-        
+
         return $this;
     }
-    
+
     /**
-     * Apply multiple function to column
+     * Apply multiple function to column.
      *
      * @param $value
      *
@@ -239,14 +241,14 @@ class Column
     public function multiple($value)
     {
         $value = $this->expressionToString($value);
-        
+
         $this->functions[] = ['function' => 'multiple', 'params' => $value];
 
         return $this;
     }
 
     /**
-     * Return sub-query
+     * Return sub-query.
      *
      * @return Builder
      */
@@ -256,7 +258,7 @@ class Column
     }
 
     /**
-     * Execute sub-query in select statement of column
+     * Execute sub-query in select statement of column.
      *
      * @param \Closure|Builder|null $query
      *
@@ -273,7 +275,7 @@ class Column
         }
 
         if ($query instanceof Builder) {
-            if (is_null($this->alias) && ! is_null($this->columnName)) {
+            if (is_null($this->alias) && !is_null($this->columnName)) {
                 $this->alias($this->columnName);
             }
 

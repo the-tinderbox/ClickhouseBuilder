@@ -7,7 +7,7 @@ use Tinderbox\ClickhouseBuilder\Query\BaseBuilder as Builder;
 trait FormatComponentCompiler
 {
     /**
-     * Compiles format to string to pass this string in query
+     * Compiles format to string to pass this string in query.
      *
      * @param Builder $builder
      * @param         $format
@@ -18,5 +18,4 @@ trait FormatComponentCompiler
     {
         return "FORMAT {$format}";
     }
-
 }

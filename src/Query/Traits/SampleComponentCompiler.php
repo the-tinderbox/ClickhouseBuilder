@@ -7,7 +7,7 @@ use Tinderbox\ClickhouseBuilder\Query\BaseBuilder as Builder;
 trait SampleComponentCompiler
 {
     /**
-     * Compiles sample to string to pass this string in query
+     * Compiles sample to string to pass this string in query.
      *
      * @param Builder    $builder
      * @param float|null $sample
@@ -18,5 +18,4 @@ trait SampleComponentCompiler
     {
         return "SAMPLE {$sample}";
     }
-
 }

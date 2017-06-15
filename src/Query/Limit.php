@@ -5,26 +5,26 @@ namespace Tinderbox\ClickhouseBuilder\Query;
 class Limit
 {
     /**
-     * Number of rows to take from result
+     * Number of rows to take from result.
      *
      * @var int|null
      */
     private $limit;
 
     /**
-     * Number of rows to skip
+     * Number of rows to skip.
      *
      * @var int|null
      */
     private $offset;
 
     /**
-     * Columns to limit distinctly
+     * Columns to limit distinctly.
      *
      * @var array
      */
     private $by = [];
-    
+
     /**
      * Limit constructor.
      *
@@ -40,7 +40,7 @@ class Limit
     }
 
     /**
-     * Get number of rows to take
+     * Get number of rows to take.
      *
      * @return int
      */
@@ -50,7 +50,7 @@ class Limit
     }
 
     /**
-     * Get number of rows to skip
+     * Get number of rows to skip.
      *
      * @return int
      */
@@ -60,7 +60,7 @@ class Limit
     }
 
     /**
-     * Get columns to limit distinctly
+     * Get columns to limit distinctly.
      *
      * @return array
      */
@@ -68,5 +68,4 @@ class Limit
     {
         return $this->by;
     }
-
 }
