@@ -5,7 +5,7 @@ namespace Tinderbox\ClickhouseBuilder\Query\Enums;
 use MyCLabs\Enum\Enum;
 
 /**
- * Order directions
+ * Order directions.
  */
 final class OrderDirection extends Enum
 {

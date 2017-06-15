@@ -4,9 +4,9 @@ namespace Tinderbox\ClickhouseBuilder\Query;
 
 use Closure;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
-use Tinderbox\ClickhouseBuilder\Query\Enums\Operator;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinStrict;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinType;
+use Tinderbox\ClickhouseBuilder\Query\Enums\Operator;
 use Tinderbox\ClickhouseBuilder\Query\Enums\OrderDirection;
 
 abstract class BaseBuilder
@@ -119,7 +119,7 @@ abstract class BaseBuilder
     /**
      * Set columns for select statement.
      *
-     * @param  array|mixed $columns
+     * @param array|mixed $columns
      *
      * @return self
      */
@@ -169,7 +169,6 @@ abstract class BaseBuilder
         $result = [];
 
         foreach ($columns as $column => $value) {
-
             if ($value instanceof Closure) {
                 $columnName = $column;
                 $column = (new Column($this));
@@ -376,8 +375,7 @@ abstract class BaseBuilder
         string $type = null,
         array $using = null,
         bool $global = false
-    ) : self
-    {
+    ) : self {
         $this->join = new JoinClause($this);
 
         /*
@@ -541,12 +539,11 @@ abstract class BaseBuilder
      */
     protected function assembleTwoElementsLogicExpression(
         $column,
-        $operator = null,
-        $value = null,
-        string $concatOperator = Operator::AND,
+        $operator,
+        $value,
+        string $concatOperator,
         string $section
-    ) : TwoElementsLogicExpression
-    {
+    ) : TwoElementsLogicExpression {
         $expression = new TwoElementsLogicExpression($this);
 
         /*
@@ -572,7 +569,6 @@ abstract class BaseBuilder
          * to just wrap this in parenthesis, otherwise - subquery.
          */
         if ($column instanceof Closure) {
-
             $query = tap($this->newQuery(), $column);
 
             if (is_null($query->getFrom()) && empty($query->getColumns())) {
@@ -580,7 +576,6 @@ abstract class BaseBuilder
             } else {
                 $expression->firstElement(new Expression("({$query->toSql()})"));
             }
-
         }
 
         /*
@@ -605,7 +600,6 @@ abstract class BaseBuilder
         }
 
         if (is_null($expression->getSecondElement()) && !is_null($value)) {
-
             if (is_array($value) && count($value) === 2 && Operator::isValid($operator) && in_array(
                     $operator,
                     [Operator::BETWEEN, Operator::NOT_BETWEEN]
@@ -627,7 +621,6 @@ abstract class BaseBuilder
             }
 
             $expression->secondElement($value);
-
         }
 
         $expression->concatOperator($concatOperator);
@@ -642,9 +635,9 @@ abstract class BaseBuilder
     /**
      * Prepare operator for where and prewhere statement.
      *
-     * @param  mixed  $value
-     * @param  string $operator
-     * @param  bool   $useDefault
+     * @param mixed  $value
+     * @param string $operator
+     * @param bool   $useDefault
      *
      * @return array
      */
@@ -663,7 +656,6 @@ abstract class BaseBuilder
         }
 
         return [$value, $operator];
-
     }
 
     /**
@@ -919,7 +911,6 @@ abstract class BaseBuilder
      */
     public function where($column, $operator = null, $value = null, string $concatOperator = Operator::AND) : self
     {
-
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
 
         $this->wheres[] = $this->assembleTwoElementsLogicExpression(
@@ -1156,7 +1147,6 @@ abstract class BaseBuilder
     {
         return $this->whereBetween($column, $values, Operator::OR);
     }
-
 
     /**
      * Add where statement with NOT BETWEEN simulation.
@@ -1409,7 +1399,7 @@ abstract class BaseBuilder
             $as = $attribute;
         }
 
-        $id = is_array($key) ? "tuple(" . implode(', ', array_map([$this->grammar, 'wrap'], $key)) . ")" : $this->grammar->wrap($key);
+        $id = is_array($key) ? 'tuple('.implode(', ', array_map([$this->grammar, 'wrap'], $key)).')' : $this->grammar->wrap($key);
 
         return $this
             ->addSelect(new Expression("dictGetString('{$dict}', '{$attribute}', {$id}) as `{$as}`"));
@@ -1434,8 +1424,7 @@ abstract class BaseBuilder
         $operator = null,
         $value = null,
         string $concatOperator = Operator::AND
-    ) : self
-    {
+    ) : self {
         $this->addSelectDict($dict, $attribute, $key);
 
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 4);
@@ -1460,8 +1449,7 @@ abstract class BaseBuilder
         $key,
         $operator = null,
         $value = null
-    ) : self
-    {
+    ) : self {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 4);
 
         return $this->whereDict($dict, $attribute, $key, $operator, $value, Operator::OR);
@@ -1533,7 +1521,7 @@ abstract class BaseBuilder
      *
      * @return self
      */
-    function take(int $limit, int $offset = null) : self
+    public function take(int $limit, int $offset = null) : self
     {
         return $this->limit($limit, $offset);
     }
@@ -1546,7 +1534,7 @@ abstract class BaseBuilder
      *
      * @return self
      */
-    function takeBy(int $count, ...$columns) : self
+    public function takeBy(int $count, ...$columns) : self
     {
         return $this->limitBy($count, ...$columns);
     }

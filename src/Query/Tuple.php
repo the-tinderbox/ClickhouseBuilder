@@ -3,12 +3,12 @@
 namespace Tinderbox\ClickhouseBuilder\Query;
 
 /**
- * Object to represent tuple
+ * Object to represent tuple.
  */
 class Tuple
 {
     /**
-     * Tuple elements
+     * Tuple elements.
      *
      * @var array
      */
@@ -25,7 +25,7 @@ class Tuple
     }
 
     /**
-     * Get tuple elements
+     * Get tuple elements.
      *
      * @return array
      */
@@ -35,10 +35,10 @@ class Tuple
     }
 
     /**
-     * Add element to tuple
+     * Add element to tuple.
      *
      * @param array ...$elements
-     * 
+     *
      * @return Tuple
      */
     public function addElements(...$elements) : self
@@ -47,5 +47,4 @@ class Tuple
 
         return $this;
     }
-
 }

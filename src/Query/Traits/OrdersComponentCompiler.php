@@ -7,7 +7,7 @@ use Tinderbox\ClickhouseBuilder\Query\BaseBuilder as Builder;
 trait OrdersComponentCompiler
 {
     /**
-     * Compiles order to string to pass this string in query
+     * Compiles order to string to pass this string in query.
      *
      * @param Builder $builder
      * @param array   $orders
@@ -25,7 +25,7 @@ trait OrdersComponentCompiler
                 ($direction ? " {$direction}" : '').
                 ($collate ? " COLLATE {$this->wrap($collate)}" : '');
         }
-    
+
         return 'ORDER BY '.implode(', ', $columns);
     }
 }

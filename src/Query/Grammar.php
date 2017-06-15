@@ -4,10 +4,21 @@ namespace Tinderbox\ClickhouseBuilder\Query;
 
 use Tinderbox\ClickhouseBuilder\Exceptions\GrammarException;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
-use Tinderbox\ClickhouseBuilder\Query\Traits\{
-    ColumnsComponentCompiler, FormatComponentCompiler, FromComponentCompiler, GroupsComponentCompiler, HavingsComponentCompiler, JoinComponentCompiler, LimitByComponentCompiler, LimitComponentCompiler, OrdersComponentCompiler, PreWheresComponentCompiler, SampleComponentCompiler, TupleCompiler, TwoElementsLogicExpressionsCompiler, UnionsComponentCompiler, WheresComponentCompiler
-};
-
+use Tinderbox\ClickhouseBuilder\Query\Traits\ColumnsComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\FormatComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\FromComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\GroupsComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\HavingsComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\JoinComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\LimitByComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\LimitComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\OrdersComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\PreWheresComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\SampleComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\TupleCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\TwoElementsLogicExpressionsCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\UnionsComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\WheresComponentCompiler;
 
 class Grammar
 {
@@ -44,9 +55,10 @@ class Grammar
     ];
 
     /**
-     * Compiles select query
+     * Compiles select query.
      *
      * @param BaseBuilder $query
+     *
      * @return string
      */
     public function compileSelect(BaseBuilder $query)
@@ -61,7 +73,7 @@ class Grammar
             $compileMethod = 'compile'.ucfirst($component).'Component';
             $component = 'get'.ucfirst($component);
 
-            if (! is_null($query->$component()) && ! empty($query->$component())) {
+            if (!is_null($query->$component()) && !empty($query->$component())) {
                 $sql[$component] = $this->$compileMethod($query, $query->$component());
             }
         }
@@ -73,24 +85,24 @@ class Grammar
      * Compile insert query for values.
      *
      * @param BaseBuilder $query
-     * @param         $values
-     *
-     * @return string
+     * @param             $values
      *
      * @throws GrammarException
+     *
+     * @return string
      */
     public function compileInsert(BaseBuilder $query, $values) : string
     {
         $result = [];
-        
+
         $from = $query->getFrom();
-        
+
         if (is_null($from)) {
             throw GrammarException::missedTableForInsert();
         }
 
         $table = $this->wrap($from->getTable());
-    
+
         if (is_null($table)) {
             throw GrammarException::missedTableForInsert();
         }
@@ -103,21 +115,19 @@ class Grammar
 
         $columns = $this->compileTuple(new Tuple($columns));
 
-
         $result[] = "INSERT INTO {$table}";
-
 
         if ($columns !== '') {
             $result[] = "({$columns})";
         }
 
-        $result[] = "FORMAT " . ($query->getFormat() ?? Format::VALUES);
+        $result[] = 'FORMAT '.($query->getFormat() ?? Format::VALUES);
 
         $result[] = implode(', ', array_map(function ($value) {
-
-            return "(".implode(', ', array_map(function () {return '?';}, $value)).")";
-
-            }, $values));
+            return '('.implode(', ', array_map(function () {
+                return '?';
+            }, $value)).')';
+        }, $values));
 
         return implode(' ', $result);
     }
@@ -125,7 +135,7 @@ class Grammar
     /**
      * Convert value in literal.
      *
-     * @param  string|Expression|Identifier|array  $value
+     * @param string|Expression|Identifier|array $value
      *
      * @return string|array|null
      */
@@ -141,21 +151,21 @@ class Grammar
             return "'{$value}'";
         } elseif ($value instanceof Identifier) {
             $value = (string) $value;
-    
+
             if (strpos(strtolower($value), '.') !== false) {
-                return implode('.',array_map(function ($element) {
+                return implode('.', array_map(function ($element) {
                     return $this->wrap(new Identifier($element));
                 }, array_map('trim', preg_split('/\./', $value))));
             }
-    
+
             if (strpos(strtolower($value), ' as ') !== false) {
                 list($value, $alias) = array_map('trim', preg_split('/\s+as\s+/i', $value));
-        
+
                 $value = $this->wrap(new Identifier($value));
                 $alias = $this->wrap(new Identifier($alias));
-        
+
                 $value = "$value AS $alias";
-                
+
                 return $value;
             }
 
@@ -163,7 +173,7 @@ class Grammar
         } elseif (is_numeric($value)) {
             return $value;
         } else {
-            return null;
+            return;
         }
     }
 
@@ -179,7 +189,7 @@ class Grammar
         $result = [];
 
         foreach ($builder->getAsync() as $query) {
-            if (! empty($query->getAsync())) {
+            if (!empty($query->getAsync())) {
                 $result = array_merge($result, $this->flatAsyncQueries($query));
             } else {
                 $result[] = $query;
