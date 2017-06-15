@@ -392,7 +392,7 @@ request with this number.
 
 #### Laravel
 
-Есть возможность использовать текущий билдер в Laravel/Lumen.
+You can use this builder in Laravel/Lumen applications.
 
 **Laravel**
 
