@@ -38,6 +38,6 @@ class GrammarException extends Exception
 
     public static function missedTableForInsert()
     {
-        return new static("Missed table for insert statement.");
+        return new static('Missed table for insert statement.');
     }
 }

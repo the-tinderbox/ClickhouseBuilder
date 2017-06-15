@@ -9,7 +9,7 @@ use Tinderbox\ClickhouseBuilder\Query\JoinClause;
 trait JoinComponentCompiler
 {
     /**
-     * Compiles join to string to pass this string in query
+     * Compiles join to string to pass this string in query.
      *
      * @param Builder    $query
      * @param JoinClause $join
@@ -37,9 +37,9 @@ trait JoinComponentCompiler
 
         return implode(' ', $result);
     }
-    
+
     /**
-     * Verifies join
+     * Verifies join.
      *
      * @param JoinClause $joinClause
      *

@@ -8,7 +8,7 @@ use Tinderbox\ClickhouseBuilder\Query\Expression;
 trait ColumnCompiler
 {
     /**
-     * Compiles column in string to pass this string in query
+     * Compiles column in string to pass this string in query.
      *
      * @param Column $column
      *
@@ -30,20 +30,20 @@ trait ColumnCompiler
 
             $result = $this->{$functionName}(empty($result) ? $this->wrap($columnName) : new Expression($result), $params);
         }
-    
+
         if (empty($result) && !is_null($columnName)) {
             $result = $this->wrap($columnName);
         }
-    
+
         if (!is_null($column->getAlias())) {
-            $result .=  " AS {$this->wrap($column->getAlias())}";
+            $result .= " AS {$this->wrap($column->getAlias())}";
         }
 
         return $result;
     }
-    
+
     /**
-     * Compiles plus function on column
+     * Compiles plus function on column.
      *
      * @param $firstValue
      * @param $secondValue
@@ -54,9 +54,9 @@ trait ColumnCompiler
     {
         return "{$firstValue} + {$this->wrap($secondValue)}";
     }
-    
+
     /**
-     * Compiles multiple function on column
+     * Compiles multiple function on column.
      *
      * @param $firstValue
      * @param $secondValue
@@ -69,7 +69,7 @@ trait ColumnCompiler
     }
 
     /**
-     * Compiles runningDifference function on column
+     * Compiles runningDifference function on column.
      *
      * @param $column
      *
@@ -82,11 +82,11 @@ trait ColumnCompiler
 
     private function count()
     {
-        return "count()";
+        return 'count()';
     }
 
     /**
-     * Compiles sumIf function on column
+     * Compiles sumIf function on column.
      *
      * @param $column
      * @param $condition
@@ -101,15 +101,14 @@ trait ColumnCompiler
     }
 
     /**
-     * Compiles distinct function on column
+     * Compiles distinct function on column.
      *
      * @param $column
-     * 
+     *
      * @return string
      */
     private function distinct($column)
     {
         return "DISTINCT {$column}";
     }
-
 }

@@ -5,7 +5,7 @@ namespace Tinderbox\ClickhouseBuilder\Query\Enums;
 use MyCLabs\Enum\Enum;
 
 /**
- * Join types
+ * Join types.
  */
 final class JoinType extends Enum
 {

@@ -10,10 +10,10 @@ trait ColumnsComponentCompiler
     use ColumnCompiler;
 
     /**
-     * Compiles columns for select statement
+     * Compiles columns for select statement.
      *
      * @param BaseBuilder $builder
-     * @param Column[] $columns
+     * @param Column[]    $columns
      *
      * @return string
      */
