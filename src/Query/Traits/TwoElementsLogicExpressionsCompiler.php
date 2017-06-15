@@ -9,7 +9,7 @@ use Tinderbox\ClickhouseBuilder\Query\TwoElementsLogicExpression;
 trait TwoElementsLogicExpressionsCompiler
 {
     /**
-     * Compiles TwoElementsLogicExpression elements
+     * Compiles TwoElementsLogicExpression elements.
      *
      * Used in prewhere, where and having statements
      *
@@ -48,7 +48,7 @@ trait TwoElementsLogicExpressionsCompiler
     }
 
     /**
-     * Compiles one element in TwoElementsLogicExpression
+     * Compiles one element in TwoElementsLogicExpression.
      *
      * @param mixed $element
      *
@@ -66,11 +66,10 @@ trait TwoElementsLogicExpressionsCompiler
             $result[] = "({$this->compileTuple($element)})";
         } elseif ($element instanceof Column) {
             $result[] = $this->compileColumn($element);
-        } elseif (! is_null($element)) {
+        } elseif (!is_null($element)) {
             $result[] = $this->wrap($element);
         }
 
         return implode(' ', $result);
     }
-
 }

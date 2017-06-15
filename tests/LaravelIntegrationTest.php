@@ -2,12 +2,12 @@
 
 namespace Tinderbox\ClickhouseBuilder;
 
-use Mockery as m;
 use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 use Illuminate\Database\DatabaseServiceProvider;
 use Illuminate\Events\EventServiceProvider;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery as m;
 use PHPUnit\Framework\TestCase;
 use Tinderbox\Clickhouse\Client;
 use Tinderbox\Clickhouse\Cluster;
@@ -28,15 +28,15 @@ class LaravelIntegrationTest extends TestCase
     public function getSimpleConfig()
     {
         return [
-            'host' => 'localhost',
-            'port' => 8123,
+            'host'     => 'localhost',
+            'port'     => 8123,
             'database' => 'database',
             'username' => 'default',
             'password' => '',
-            'options' => [
-                'timeout' => 10,
-                'protocol' => 'http'
-            ]
+            'options'  => [
+                'timeout'  => 10,
+                'protocol' => 'http',
+            ],
         ];
     }
 
@@ -45,20 +45,20 @@ class LaravelIntegrationTest extends TestCase
         return [
             'cluster' => [
                 'server-1' => [
-                    'host' => 'localhost',
-                    'port' => 8123,
+                    'host'     => 'localhost',
+                    'port'     => 8123,
                     'database' => 'database',
                     'username' => 'default',
-                    'password' => ''
+                    'password' => '',
                 ],
                 'server2' => [
-                    'host' => 'localhost',
-                    'port' => 8123,
+                    'host'     => 'localhost',
+                    'port'     => 8123,
                     'database' => 'database',
                     'username' => 'default',
-                    'password' => ''
-                ]
-            ]
+                    'password' => '',
+                ],
+            ],
         ];
     }
 
@@ -72,15 +72,15 @@ class LaravelIntegrationTest extends TestCase
                 'database' => [
                     'connections' => [
                         'clickhouse' => [
-                            'driver' => 'clickhouse',
-                            'host' => 'localhost',
-                            'port' => 8123,
+                            'driver'   => 'clickhouse',
+                            'host'     => 'localhost',
+                            'port'     => 8123,
                             'database' => 'database',
                             'username' => 'default',
-                            'password' => ''
-                        ]
-                    ]
-                ]
+                            'password' => '',
+                        ],
+                    ],
+                ],
             ]);
         });
 
@@ -220,14 +220,14 @@ class LaravelIntegrationTest extends TestCase
         $client->shouldReceive('selectAsync')
             ->with([
                 'select * from `table1`',
-                'select * from `table2`'
+                'select * from `table2`',
             ])
             ->andReturn([$result]);
         $connection->setClient($client);
 
         $connection->selectAsync([
             'select * from `table1`',
-            'select * from `table2`'
+            'select * from `table2`',
         ]);
     }
 
@@ -305,7 +305,8 @@ class LaravelIntegrationTest extends TestCase
     {
         $connection = new Connection($this->getSimpleConfig());
         $this->expectException(NotSupportedException::class);
-        $connection->transaction(function () {});
+        $connection->transaction(function () {
+        });
     }
 
     public function test_connection_using()

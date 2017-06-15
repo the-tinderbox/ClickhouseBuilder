@@ -3,17 +3,17 @@
 namespace Tinderbox\ClickhouseBuilder\Query;
 
 /**
- * Object for element identity which should be escaped
+ * Object for element identity which should be escaped.
  */
 class Identifier
 {
     /**
-     * Value
+     * Value.
      *
      * @var mixed
      */
     private $value;
-    
+
     /**
      * Identifier constructor.
      *
@@ -23,9 +23,9 @@ class Identifier
     {
         $this->value = $value;
     }
-    
+
     /**
-     * Converts value to string
+     * Converts value to string.
      *
      * @return string
      */

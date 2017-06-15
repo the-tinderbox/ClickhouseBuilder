@@ -7,7 +7,7 @@ use Tinderbox\ClickhouseBuilder\Query\Enums\Operator;
 class TwoElementsLogicExpression
 {
     /**
-     * First element
+     * First element.
      *
      * May be array or TwoElementsLogicExpression.
      *
@@ -16,21 +16,21 @@ class TwoElementsLogicExpression
     private $firstElement;
 
     /**
-     * Operator
+     * Operator.
      *
      * @var Operator
      */
     private $operator;
 
     /**
-     * Second element
+     * Second element.
      *
      * @var mixed
      */
     private $secondElement;
 
     /**
-     * Operator which concatenates main statement
+     * Operator which concatenates main statement.
      *
      * May be OR or AND
      *
@@ -39,12 +39,12 @@ class TwoElementsLogicExpression
     private $concatenationOperator;
 
     /**
-     * Builder
+     * Builder.
      *
      * @var Builder
      */
     private $query;
-    
+
     /**
      * TwoElementsLogicExpression constructor.
      *
@@ -56,7 +56,7 @@ class TwoElementsLogicExpression
     }
 
     /**
-     * Set first element
+     * Set first element.
      *
      * @param mixed $element
      *
@@ -70,7 +70,7 @@ class TwoElementsLogicExpression
     }
 
     /**
-     * Operator between two elements
+     * Operator between two elements.
      *
      * @param string $operator
      *
@@ -84,7 +84,7 @@ class TwoElementsLogicExpression
     }
 
     /**
-     * Set second element
+     * Set second element.
      *
      * @param mixed $element
      *
@@ -98,7 +98,7 @@ class TwoElementsLogicExpression
     }
 
     /**
-     * Set concatenate operator
+     * Set concatenate operator.
      *
      * @param string $operator
      *
@@ -112,7 +112,7 @@ class TwoElementsLogicExpression
     }
 
     /**
-     * Build query string for first element
+     * Build query string for first element.
      *
      * @param \Closure|Builder $query
      *
@@ -132,7 +132,7 @@ class TwoElementsLogicExpression
     }
 
     /**
-     * Build query string for second element
+     * Build query string for second element.
      *
      * @param $query
      *
@@ -152,7 +152,7 @@ class TwoElementsLogicExpression
     }
 
     /**
-     * Get first element
+     * Get first element.
      *
      * @return mixed
      */
@@ -162,7 +162,7 @@ class TwoElementsLogicExpression
     }
 
     /**
-     * Get operator
+     * Get operator.
      *
      * @return mixed
      */
@@ -172,7 +172,7 @@ class TwoElementsLogicExpression
     }
 
     /**
-     * Get seconds element
+     * Get seconds element.
      *
      * @return mixed
      */
@@ -182,7 +182,7 @@ class TwoElementsLogicExpression
     }
 
     /**
-     * Get concatenation operator
+     * Get concatenation operator.
      *
      * @return mixed
      */
@@ -190,5 +190,4 @@ class TwoElementsLogicExpression
     {
         return $this->concatenationOperator;
     }
-
 }

@@ -14,13 +14,13 @@ class FunctionsTest extends TestCase
         $callback = function () use (&$result) {
             $result = 2;
         };
-    
+
         $returnedValue = tap($value, $callback);
-        
-            $this->assertEquals($value, $returnedValue);
+
+        $this->assertEquals($value, $returnedValue);
         $this->assertEquals(2, $result);
     }
-    
+
     public function testArrayFlatten()
     {
         $array = [
@@ -30,13 +30,13 @@ class FunctionsTest extends TestCase
                 ],
             ],
         ];
-        
+
         $flatten = array_flatten($array);
-        
+
         $this->assertEquals(['value'], $flatten);
-        
+
         $flatten = array_flatten($array, 1);
-        
+
         $this->assertEquals(
             [
                 [
@@ -46,11 +46,11 @@ class FunctionsTest extends TestCase
             $flatten
         );
     }
-    
+
     public function testRaw()
     {
         $expression = raw('test');
-        
+
         $this->assertInstanceOf(Expression::class, $expression);
     }
 }

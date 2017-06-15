@@ -5,35 +5,35 @@ namespace Tinderbox\ClickhouseBuilder\Query;
 class From
 {
     /**
-     * Table name
+     * Table name.
      *
      * @var Identifier|Expression|null
      */
     private $table;
 
     /**
-     * Table alias
+     * Table alias.
      *
      * @var Identifier|null
      */
     private $alias;
 
     /**
-     * Final option
+     * Final option.
      *
      * @var bool|null
      */
     private $final;
 
     /**
-     * Builder is needed to pass bindings in main query
+     * Builder is needed to pass bindings in main query.
      *
      * @var Builder
      */
     private $query;
 
     /**
-     * Query which was made with sub-query builder
+     * Query which was made with sub-query builder.
      *
      * @var Builder|null
      */
@@ -50,7 +50,7 @@ class From
     }
 
     /**
-     * Set table name
+     * Set table name.
      *
      * @param string|Expression $table
      *
@@ -68,7 +68,7 @@ class From
     }
 
     /**
-     * Set table alias
+     * Set table alias.
      *
      * @param string $alias
      *
@@ -98,11 +98,11 @@ class From
     }
 
     /**
-     * Use remote function to get data from remote server without table with Distributed engine
+     * Use remote function to get data from remote server without table with Distributed engine.
      *
-     * @param string $expression
-     * @param string $database
-     * @param string $table
+     * @param string      $expression
+     * @param string      $database
+     * @param string      $table
      * @param string|null $user
      * @param string|null $password
      *
@@ -112,26 +112,26 @@ class From
     {
         $remote = "remote('{$expression}', {$database}, {$table}";
 
-        if (! is_null($user)) {
+        if (!is_null($user)) {
             $remote .= ", {$user}";
         }
 
-        if (! is_null($password)) {
+        if (!is_null($password)) {
             $remote .= ", {$password}";
         }
 
-        $remote .= ")";
+        $remote .= ')';
 
         return $this->table(new Expression($remote));
     }
 
     /**
      * Creates temp table with Merge engine
-     * Structure takes from first table in regular expression
+     * Structure takes from first table in regular expression.
      *
      * @param string $database
      * @param string $regexp
-     * 
+     *
      * @return From
      */
     public function merge(string $database, string $regexp) : self
@@ -140,7 +140,7 @@ class From
     }
 
     /**
-     * Executes sub-query in from statement
+     * Executes sub-query in from statement.
      *
      * @param \Closure|Builder|null $query
      *
@@ -157,8 +157,7 @@ class From
         }
 
         if ($query instanceof Builder) {
-
-            if (is_null($this->alias) && ! is_null($this->table)) {
+            if (is_null($this->alias) && !is_null($this->table)) {
                 $this->as($this->table);
             }
 
@@ -169,7 +168,7 @@ class From
     }
 
     /**
-     * Get sub-query
+     * Get sub-query.
      *
      * @return Builder
      */
@@ -179,7 +178,7 @@ class From
     }
 
     /**
-     * Get table name
+     * Get table name.
      *
      * @return Expression|Identifier|null
      */
@@ -189,7 +188,7 @@ class From
     }
 
     /**
-     * Get alias
+     * Get alias.
      *
      * @return Identifier
      */
@@ -199,7 +198,7 @@ class From
     }
 
     /**
-     * Get final option
+     * Get final option.
      *
      * @return bool
      */
@@ -209,7 +208,7 @@ class From
     }
 
     /**
-     * Get sub-query builder
+     * Get sub-query builder.
      *
      * @return null|Builder
      */
@@ -217,5 +216,4 @@ class From
     {
         return $this->subQuery;
     }
-
 }
