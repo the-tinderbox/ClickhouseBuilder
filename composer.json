@@ -13,7 +13,7 @@
   ],
   "autoload": {
     "psr-4": {
-      "Tinderbox\\ClickhouseBuilder\\": "src",
+      "Tinderbox\\ClickhouseBuilder\\": "src"
     },
     "files": [
       "src/functions.php"

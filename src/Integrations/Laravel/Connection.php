@@ -275,7 +275,7 @@ class Connection extends \Illuminate\Database\Connection
      */
     public function select($query, $bindings = [], $tables = [])
     {
-        $result = $this->getClient()->select($query, $bindings);
+        $result = $this->getClient()->select($query, $bindings, $tables);
 
         $this->logQuery($query, $bindings, $result->getStatistic()->getTime());
 
