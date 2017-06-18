@@ -14,10 +14,10 @@
   "autoload": {
     "psr-4": {
       "Tinderbox\\ClickhouseBuilder\\": "src",
-      "files": [
-        "src/functions.php"
-      ]
-    }
+    },
+    "files": [
+      "src/functions.php"
+    ]
   },
   "autoload-dev": {
     "psr-4": {
