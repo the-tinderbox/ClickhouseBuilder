@@ -3,6 +3,8 @@
 namespace Tinderbox\ClickhouseBuilder\Query;
 
 use Closure;
+use Tinderbox\Clickhouse\Common\TempTable;
+use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinStrict;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinType;
@@ -115,6 +117,13 @@ abstract class BaseBuilder
      * @var array
      */
     protected $async = [];
+    
+    /**
+     * Files which should be sent on server to store into temporary table
+     *
+     * @var array
+     */
+    protected $files = [];
 
     /**
      * Set columns for select statement.
@@ -739,6 +748,8 @@ abstract class BaseBuilder
 
         if (is_array($values)) {
             $values = new Tuple($values);
+        } elseif (is_string($values) && isset($this->files[$values])) {
+            $values = new Identifier($values);
         }
 
         return $this->preWhere($column, $type, $values, $boolean);
@@ -980,6 +991,8 @@ abstract class BaseBuilder
 
         if (is_array($values)) {
             $values = new Tuple($values);
+        } elseif (is_string($values) && isset($this->files[$values])) {
+            $values = new Identifier($values);
         }
 
         return $this->where($column, $type, $values, $boolean);
@@ -1001,6 +1014,8 @@ abstract class BaseBuilder
 
         if (is_array($values)) {
             $values = new Tuple($values);
+        } elseif (is_string($values) && isset($this->files[$values])) {
+            $values = new Identifier($values);
         }
 
         return $this->where($column, $type, $values, $boolean);
@@ -1250,6 +1265,8 @@ abstract class BaseBuilder
 
         if (is_array($values)) {
             $values = new Tuple($values);
+        } elseif (is_string($values) && isset($this->files[$values])) {
+            $values = new Identifier($values);
         }
 
         return $this->having($column, $type, $values, $boolean);
@@ -1651,7 +1668,9 @@ abstract class BaseBuilder
      */
     public function toAsyncSqls() : array
     {
-        return $this->grammar->compileAsyncQueries($this);
+        return array_map(function ($query) {
+            return [$query->toSql(), [], $query->getFiles()];
+        }, $this->flatAsyncQueries($this));
     }
 
     /**
@@ -1792,5 +1811,60 @@ abstract class BaseBuilder
     public function getAsync() : array
     {
         return $this->async;
+    }
+    
+    /**
+     * Add file which should be sent on server
+     *
+     * @param string      $filePath
+     * @param string      $tableName
+     * @param array       $structure
+     * @param string|null $format
+     *
+     * @return self
+     *
+     * @throws BuilderException
+     */
+    public function addFile(string $filePath, string $tableName, array $structure, string $format = Format::CSV) : self
+    {
+        if (isset($this->files[$tableName])) {
+            throw BuilderException::temporaryTableAlreadyExists($tableName);
+        }
+        
+        $this->files[$tableName] = new TempTable($tableName, $filePath, $structure, $format);
+        
+        return $this;
+    }
+    
+    /**
+     * Returns files which should be sent on server
+     *
+     * @return array
+     */
+    public function getFiles(): array
+    {
+        return $this->files;
+    }
+    
+    /**
+     * Gather all builders from builder. Including nested in async builders.
+     *
+     * @param BaseBuilder $builder
+     *
+     * @return array
+     */
+    public function flatAsyncQueries(BaseBuilder $builder) : array
+    {
+        $result = [];
+        
+        foreach ($builder->getAsync() as $query) {
+            if (!empty($query->getAsync())) {
+                $result = array_merge($result, $this->flatAsyncQueries($query));
+            } else {
+                $result[] = $query;
+            }
+        }
+        
+        return array_merge([$builder], $result);
     }
 }

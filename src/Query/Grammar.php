@@ -176,40 +176,4 @@ class Grammar
             return;
         }
     }
-
-    /**
-     * Gather all builders from builder. Including nested in async builders.
-     *
-     * @param BaseBuilder $builder
-     *
-     * @return array
-     */
-    private function flatAsyncQueries(BaseBuilder $builder) : array
-    {
-        $result = [];
-
-        foreach ($builder->getAsync() as $query) {
-            if (!empty($query->getAsync())) {
-                $result = array_merge($result, $this->flatAsyncQueries($query));
-            } else {
-                $result[] = $query;
-            }
-        }
-
-        return array_merge([$builder], $result);
-    }
-
-    /**
-     * Gather all builders from builder on any nested level, and return array of sqls from all that builders.
-     *
-     * @param BaseBuilder $builder
-     *
-     * @return array
-     */
-    public function compileAsyncQueries(BaseBuilder $builder) : array
-    {
-        return array_map(function ($query) {
-            return $query->toSql();
-        }, $this->flatAsyncQueries($builder));
-    }
 }

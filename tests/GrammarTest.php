@@ -324,24 +324,4 @@ class GrammarTest extends TestCase
 
         $grammar->compileSelect($builder);
     }
-
-    public function testCompileAsyncQueries()
-    {
-        $builder = $this->getBuilder();
-        $builder->from('table1')->asyncWithQuery(function ($builder) {
-            $builder->from('table2')->asyncWithQuery(function ($builder) {
-                $builder->from('table3');
-            });
-        });
-
-        $grammar = new Grammar();
-
-        $sqls = $grammar->compileAsyncQueries($builder);
-
-        $this->assertEquals([
-            'SELECT * FROM `table1`',
-            'SELECT * FROM `table2`',
-            'SELECT * FROM `table3`',
-        ], $sqls);
-    }
 }

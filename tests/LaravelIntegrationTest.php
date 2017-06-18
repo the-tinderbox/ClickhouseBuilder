@@ -348,7 +348,9 @@ class LaravelIntegrationTest extends TestCase
         $result->shouldReceive('getStatistic')->andReturn($queryStat);
         $result->shouldReceive('getRows')->andReturn([]);
 
-        $client->shouldReceive('selectAsync')->with(['SELECT * FROM `table`', 'SELECT * FROM `table2`'])->andReturn([$result]);
+        $client->shouldReceive('selectAsync')->with([
+            ['SELECT * FROM `table`', [], []], ['SELECT * FROM `table2`', [], []]
+        ])->andReturn([$result]);
         $connection->setClient($client);
 
         $connection->table('table')->asyncWithQuery(function ($builder) {

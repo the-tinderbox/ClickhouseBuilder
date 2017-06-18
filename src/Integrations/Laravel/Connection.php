@@ -269,11 +269,11 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @param string $query
      * @param array  $bindings
-     * @param bool   $useReadPdo
+     * @param array $tables
      *
      * @return array
      */
-    public function select($query, $bindings = [], $useReadPdo = true)
+    public function select($query, $bindings = [], $tables = [])
     {
         $result = $this->getClient()->select($query, $bindings);
 

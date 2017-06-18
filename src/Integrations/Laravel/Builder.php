@@ -37,7 +37,7 @@ class Builder extends BaseBuilder
         if (!empty($this->async)) {
             return $this->connection->selectAsync($this->toAsyncSqls());
         } else {
-            return $this->connection->select($this->toSql());
+            return $this->connection->select($this->toSql(), [], $this->getFiles());
         }
     }
 

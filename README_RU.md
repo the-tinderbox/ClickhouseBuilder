@@ -203,6 +203,32 @@ $buulder->from('table')->leftJoin('table', 'any', ['column']);
 $buulder->from('table')->innerJoin('table', 'all', ['column']);
 ```
 
+### Temporary tables usage
+
+Бывают случаи когда вам требуется отфильтровать данные, например пользователей по их идентификаторам, но кол-во
+идентификаторов исчисляется миллионами. Вы можете разместить их в локальном файле и использовать его в качестве
+временной таблицы на сервере.
+
+```php
+/*
+ * Добавим файл с идентификаторами пользователей как таблицу _users
+ * Так же мы должны указать структуру таблицы. В примере ниже
+ * структура таблицы будет ['UInt64']
+ */
+$builder->addFile('users.csv', '_users', ['UInt64']);
+$builder->select(raw('count()'))->from('clicks')->whereIn('userId', new Identifier('_users'));
+```
+
+Конечный запрос будет таким:
+
+```sql
+SELECT count() FROM `clicks` WHERE `userId` IN `_users`
+```
+
+**Если вы хотите, что бы таблицы подхватывались автоматически, то вам следует вызывать `addFile` до того как вы вызываете `whereIn`.**
+
+Локальные файлы можно так же использовать в `whereIn`, `prewhereIn`, `havingIn` и `join` методах билдера.
+
 ### Prewhere, where, having
 
 Условия фильтрации данных prewhere, where и having. Все примеры описаны для where, но prewhere и having имеют
