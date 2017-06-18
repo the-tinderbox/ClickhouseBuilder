@@ -880,7 +880,7 @@ class BuilderTest extends TestCase
             });
         });
         
-        $sqls = $builder->flatAsyncQueries($builder);
+        $sqls = $builder->getAsyncQueries();
         
         $this->assertEquals([
             $builder,

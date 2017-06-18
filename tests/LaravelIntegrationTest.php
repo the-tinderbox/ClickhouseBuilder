@@ -157,7 +157,7 @@ class LaravelIntegrationTest extends TestCase
         $result->shouldReceive('getRows')->andReturn([]);
 
         $client->shouldReceive('select')
-            ->with('select * from `table`', [])
+            ->with('select * from `table`', [], [])
             ->andReturn($result);
 
         $connection->setClient($client);
@@ -177,7 +177,7 @@ class LaravelIntegrationTest extends TestCase
         $result->shouldReceive('getRows')->andReturn([]);
 
         $client->shouldReceive('select')
-            ->with('select * from `table`', [])
+            ->with('select * from `table`', [], [])
             ->andReturn($result);
 
         $connection->setClient($client);
@@ -331,7 +331,7 @@ class LaravelIntegrationTest extends TestCase
         $result->shouldReceive('getStatistic')->andReturn($queryStat);
         $result->shouldReceive('getRows')->andReturn([]);
 
-        $client->shouldReceive('select')->with('SELECT `column` FROM `table`', [])->andReturn($result);
+        $client->shouldReceive('select')->with('SELECT `column` FROM `table`', [], [])->andReturn($result);
         $connection->setClient($client);
 
         $connection->table('table')->select('column')->get();

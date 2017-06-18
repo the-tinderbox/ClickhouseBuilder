@@ -1670,7 +1670,7 @@ abstract class BaseBuilder
     {
         return array_map(function ($query) {
             return [$query->toSql(), [], $query->getFiles()];
-        }, $this->flatAsyncQueries($this));
+        }, $this->getAsyncQueries());
     }
 
     /**
@@ -1802,16 +1802,6 @@ abstract class BaseBuilder
     {
         return $this->format;
     }
-
-    /**
-     * Get query builders which must be run asynchronous.
-     *
-     * @return array
-     */
-    public function getAsync() : array
-    {
-        return $this->async;
-    }
     
     /**
      * Add file which should be sent on server
@@ -1845,26 +1835,20 @@ abstract class BaseBuilder
     {
         return $this->files;
     }
-    
+
     /**
      * Gather all builders from builder. Including nested in async builders.
      *
-     * @param BaseBuilder $builder
-     *
      * @return array
      */
-    public function flatAsyncQueries(BaseBuilder $builder) : array
+    public function getAsyncQueries() : array
     {
         $result = [];
-        
-        foreach ($builder->getAsync() as $query) {
-            if (!empty($query->getAsync())) {
-                $result = array_merge($result, $this->flatAsyncQueries($query));
-            } else {
-                $result[] = $query;
-            }
+
+        foreach ($this->async as $query) {
+            $result = array_merge($query->getAsyncQueries(), $result);
         }
-        
-        return array_merge([$builder], $result);
+
+        return array_merge([$this], $result);
     }
 }
