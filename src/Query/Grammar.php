@@ -138,14 +138,12 @@ class Grammar
      *
      * @param string|Expression|Identifier|array $value
      *
-     * @return string|array|null
+     * @return string|array|null|int
      */
     public function wrap($value)
     {
         if ($value instanceof Expression) {
             return $value->getValue();
-        } elseif ($value === '*') {
-            return $value;
         } elseif (is_array($value)) {
             return array_map([$this, 'wrap'], $value);
         } elseif (is_string($value)) {
@@ -167,6 +165,10 @@ class Grammar
 
                 $value = "$value AS $alias";
 
+                return $value;
+            }
+
+            if ($value === '*') {
                 return $value;
             }
 

@@ -35,7 +35,7 @@ class GrammarTest extends TestCase
         $value = $grammar->wrap(new Expression('test'));
         $this->assertEquals('test', $value);
 
-        $value = $grammar->wrap('*');
+        $value = $grammar->wrap(new Identifier('*'));
         $this->assertEquals('*', $value);
 
         $value = $grammar->wrap(['test', 'test']);

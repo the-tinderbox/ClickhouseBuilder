@@ -518,6 +518,9 @@ class BuilderTest extends TestCase
         $builder = $this->getBuilder()->select('column')->from('table')->where('column', '=', 1);
         $this->assertEquals('SELECT `column` FROM `table` WHERE `column` = 1', $builder->toSql());
 
+        $builder = $this->getBuilder()->select('column')->from('table')->where('column', '=', 0);
+        $this->assertEquals('SELECT `column` FROM `table` WHERE `column` = 0', $builder->toSql());
+
         $builder = $this->getBuilder()->select('column')->from('table')->where('column', 1);
         $this->assertEquals('SELECT `column` FROM `table` WHERE `column` = 1', $builder->toSql());
 

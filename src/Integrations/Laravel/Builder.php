@@ -2,6 +2,7 @@
 
 namespace Tinderbox\ClickhouseBuilder\Integrations\Laravel;
 
+use Tinderbox\Clickhouse\Common\Format;
 use Tinderbox\ClickhouseBuilder\Query\BaseBuilder;
 use Tinderbox\ClickhouseBuilder\Query\Grammar;
 
@@ -75,9 +76,9 @@ class Builder extends BaseBuilder
      *
      * @return array
      */
-    public function insertFiles(array $columns, array $files, string $format = 'csv', int $concurrency = 5) : array
+    public function insertFiles(array $columns, array $files, string $format = Format::CSV, int $concurrency = 5) : array
     {
-        return $this->connection->insertFiles($this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
+        return $this->connection->insertFiles((string) $this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
     }
 
     /**
