@@ -193,7 +193,7 @@ abstract class BaseBuilder
                 }
             }
 
-            if ($value instanceof self) {
+            if ($value instanceof BaseBuilder) {
                 $alias = is_string($column) ? $column : null;
                 $column = (new Column($this))->query($value);
 
@@ -239,7 +239,7 @@ abstract class BaseBuilder
         /*
          * If builder instance given, then we assume that from section should contain sub-query
          */
-        if ($table instanceof self) {
+        if ($table instanceof BaseBuilder) {
             $this->from->query($table);
         }
 
@@ -255,7 +255,7 @@ abstract class BaseBuilder
          * If given anything that is not builder instance or callback. For example, string,
          * then we assume that table name was given.
          */
-        if (!$table instanceof Closure && !$table instanceof self) {
+        if (!$table instanceof Closure && !$table instanceof BaseBuilder) {
             $this->from->table($table);
         }
 
@@ -318,7 +318,7 @@ abstract class BaseBuilder
             $query = tap($this->newQuery(), $query);
         }
 
-        if ($query instanceof self) {
+        if ($query instanceof BaseBuilder) {
             $this->unions[] = $query;
         } else {
             throw new \InvalidArgumentException('Argument for unionAll must be closure or builder instance.');
@@ -390,7 +390,7 @@ abstract class BaseBuilder
         /*
          * If builder instance given, then we assume that sub-query should be used as table in join
          */
-        if ($table instanceof self) {
+        if ($table instanceof BaseBuilder) {
             $this->join->query($table);
         }
 
@@ -406,7 +406,7 @@ abstract class BaseBuilder
          * If given anything that is not builder instance or callback. For example, string,
          * then we assume that table name was given.
          */
-        if (!$table instanceof Closure && !$table instanceof self) {
+        if (!$table instanceof Closure && !$table instanceof BaseBuilder) {
             $this->join->table($table);
         }
 
@@ -590,14 +590,14 @@ abstract class BaseBuilder
         /*
          * If as column was passed builder instance, than we perform subquery in first element position.
          */
-        if ($column instanceof self) {
+        if ($column instanceof BaseBuilder) {
             $expression->firstElementQuery($column);
         }
 
         /*
          * If builder instance given as value, then we assume that sub-query should be used there.
          */
-        if ($value instanceof self || $value instanceof Closure) {
+        if ($value instanceof BaseBuilder || $value instanceof Closure) {
             $expression->secondElementQuery($value);
         }
 
@@ -1489,7 +1489,7 @@ abstract class BaseBuilder
             $asyncQueries = tap($this->newQuery(), $asyncQueries);
         }
 
-        if ($asyncQueries instanceof self) {
+        if ($asyncQueries instanceof BaseBuilder) {
             $this->async[] = $asyncQueries;
         } else {
             throw new \InvalidArgumentException('Argument for async method must be Closure, Builder or nothing');

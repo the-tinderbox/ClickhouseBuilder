@@ -42,6 +42,18 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * Perform query and get first row
+     *
+     * @return mixed|null|\Tinderbox\Clickhouse\Query\Result
+     */
+    public function first()
+    {
+        $result = $this->get();
+
+        return $result[0] ?? null;
+    }
+
+    /**
      * Makes clean instance of builder.
      *
      * @return self
@@ -63,7 +75,7 @@ class Builder extends BaseBuilder
      *
      * @return array
      */
-    public function insertFiles(array $columns, array $files, string $format = \Tinderbox\Clickhouse\Common\Format::CSV, int $concurrency = 5) : array
+    public function insertFiles(array $columns, array $files, string $format = 'csv', int $concurrency = 5) : array
     {
         return $this->connection->insertFiles($this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
     }

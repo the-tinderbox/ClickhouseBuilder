@@ -2,6 +2,7 @@
 
 namespace Tinderbox\ClickhouseBuilder\Query;
 
+use function MongoDB\is_string_array;
 use Tinderbox\ClickhouseBuilder\Exceptions\GrammarException;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
 use Tinderbox\ClickhouseBuilder\Query\Traits\ColumnsComponentCompiler;
@@ -143,7 +144,7 @@ class Grammar
     {
         if ($value instanceof Expression) {
             return $value->getValue();
-        } elseif ($value == '*') {
+        } elseif ($value === '*') {
             return $value;
         } elseif (is_array($value)) {
             return array_map([$this, 'wrap'], $value);

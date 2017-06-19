@@ -31,17 +31,13 @@ trait TwoElementsLogicExpressionsCompiler
                 $result[] = $concat;
             }
 
-            if ($firstElement = $this->compileElement($firstElement)) {
-                $result[] = $firstElement;
-            }
+            $result[] = $this->compileElement($firstElement);
 
             if (!is_null($operator)) {
                 $result[] = $operator;
             }
 
-            if ($secondElement = $this->compileElement($secondElement)) {
-                $result[] = $secondElement;
-            }
+            $result[] = $this->compileElement($secondElement);
         }
 
         return implode(' ', $result);
