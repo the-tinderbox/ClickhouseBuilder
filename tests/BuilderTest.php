@@ -6,6 +6,8 @@ use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery as m;
 use PHPUnit\Framework\TestCase;
 use Tinderbox\Clickhouse\Client;
+use Tinderbox\Clickhouse\Common\Format;
+use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\Builder;
 use Tinderbox\ClickhouseBuilder\Query\Column;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Operator;
@@ -424,6 +426,11 @@ class BuilderTest extends TestCase
 
         $builder = $builder->newQuery()->select('column')->from('table')->preWhereIn('column', ['string', 1, 2, 3]);
         $this->assertEquals('SELECT `column` FROM `table` PREWHERE `column` IN (\'string\', 1, 2, 3)', $builder->toSql());
+    
+        $builder = $builder->newQuery();
+        $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->preWhereIn('column', '_numbers');
+        
+        $this->assertEquals('SELECT `column` FROM `table` PREWHERE `column` IN `_numbers`', $builder->toSql());
 
         $builder = $builder->newQuery()->from('table')->preWhereIn(function ($query) {
             $query->from('table2');
@@ -511,6 +518,9 @@ class BuilderTest extends TestCase
         $builder = $this->getBuilder()->select('column')->from('table')->where('column', '=', 1);
         $this->assertEquals('SELECT `column` FROM `table` WHERE `column` = 1', $builder->toSql());
 
+        $builder = $this->getBuilder()->select('column')->from('table')->where('column', '=', 0);
+        $this->assertEquals('SELECT `column` FROM `table` WHERE `column` = 0', $builder->toSql());
+
         $builder = $this->getBuilder()->select('column')->from('table')->where('column', 1);
         $this->assertEquals('SELECT `column` FROM `table` WHERE `column` = 1', $builder->toSql());
 
@@ -596,6 +606,16 @@ class BuilderTest extends TestCase
 
         $builder = $this->getBuilder()->from('table')->whereGlobalNotIn('column', [1, 2, 3])->orWhereGlobalNotIn('column2', [1, 2, 3]);
         $this->assertEquals('SELECT * FROM `table` WHERE `column` GLOBAL NOT IN (1, 2, 3) OR `column2` GLOBAL NOT IN (1, 2, 3)', $builder->toSql());
+    
+        $builder = $builder->newQuery();
+        $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->whereIn('column', '_numbers');
+    
+        $this->assertEquals('SELECT `column` FROM `table` WHERE `column` IN `_numbers`', $builder->toSql());
+    
+        $builder = $builder->newQuery();
+        $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->whereGlobalIn('column', '_numbers');
+    
+        $this->assertEquals('SELECT `column` FROM `table` WHERE `column` GLOBAL IN `_numbers`', $builder->toSql());
     }
 
     public function test_where_between()
@@ -685,6 +705,11 @@ class BuilderTest extends TestCase
 
         $builder = $this->getBuilder()->from('table')->groupBy('column')->havingIn('column', [1, 2, 3]);
         $this->assertEquals('SELECT * FROM `table` GROUP BY `column` HAVING `column` IN (1, 2, 3)', $builder->toSql());
+    
+        $builder = $builder->newQuery();
+        $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->havingIn('column', '_numbers');
+    
+        $this->assertEquals('SELECT `column` FROM `table` HAVING `column` IN `_numbers`', $builder->toSql());
 
         $builder = $this->getBuilder()->from('table')->groupBy('column')->havingNotIn('column', [1, 2, 3]);
         $this->assertEquals('SELECT * FROM `table` GROUP BY `column` HAVING `column` NOT IN (1, 2, 3)', $builder->toSql());
@@ -766,12 +791,14 @@ class BuilderTest extends TestCase
     public function test_get_and_async_get()
     {
         $client = m::mock(Client::class);
-        $client->shouldReceive('select')->with('SELECT * FROM `table`');
+        $client->shouldReceive('select')->with('SELECT * FROM `table`', [], []);
         $builder = new Builder($client);
         $builder->from('table')->get();
 
         $client = m::mock(Client::class);
-        $client->shouldReceive('selectAsync')->with(['SELECT * FROM `table1`', 'SELECT * FROM `table2`']);
+        $client->shouldReceive('selectAsync')->with([
+            ['SELECT * FROM `table1`', [], []], ['SELECT * FROM `table2`', [], []],
+        ]);
         $builder = new Builder($client);
 
         $builder->from('table1')->asyncWithQuery(function ($builder) {
@@ -838,5 +865,55 @@ class BuilderTest extends TestCase
         $builder = new Builder($client);
 
         $builder->table('table')->insertFiles(['column1', 'column2'], ['file1', 'file2']);
+    }
+    
+    public function testCompileAsyncQueries()
+    {
+        $builder = $this->getBuilder();
+        $builder2 = null;
+        $builder3 = null;
+        
+        $builder->from('table1')->asyncWithQuery(function ($builder) use(&$builder2, &$builder3) {
+            $builder2 = $builder;
+            
+            $builder->from('table2')->asyncWithQuery(function ($builder) use(&$builder3) {
+                $builder3 = $builder;
+                
+                $builder->from('table3');
+            });
+        });
+        
+        $sqls = $builder->getAsyncQueries();
+        
+        $this->assertEquals([
+            $builder,
+            $builder2,
+            $builder3,
+        ], $sqls);
+    }
+    
+    public function testAddFile()
+    {
+        $builder = $this->getBuilder();
+        $builder->addFile('test.csv', '_data', ['UInt64']);
+        
+        $files = $builder->getFiles();
+        
+        $this->assertEquals(1, count($files));
+        $this->assertArrayHasKey('_data', $files);
+        
+        /* @var \Tinderbox\Clickhouse\Common\TempTable $table */
+        $table = $files['_data'];
+        
+        $this->assertEquals('_data', $table->getName());
+        $this->assertEquals('test.csv', $table->getSource());
+        $this->assertEquals(['UInt64'], $table->getStructure());
+        $this->assertEquals(Format::CSV, $table->getFormat());
+        
+        $e = BuilderException::temporaryTableAlreadyExists('_data');
+        $this->expectException(BuilderException::class);
+        $this->expectExceptionMessage($e->getMessage());
+    
+        $builder->addFile('test.csv', '_data', ['UInt64']);
     }
 }

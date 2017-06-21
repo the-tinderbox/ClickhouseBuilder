@@ -79,6 +79,8 @@ class JoinClause
     {
         if (is_string($table)) {
             $table = new Identifier($table);
+        } elseif ($table instanceof BaseBuilder) {
+            $table = new Expression("({$table->toSql()})");
         }
 
         $this->table = $table;
@@ -211,9 +213,9 @@ class JoinClause
     /**
      * Set sub-query as table to select from.
      *
-     * @param \Closure|Builder|null $query
+     * @param \Closure|BaseBuilder|null $query
      *
-     * @return JoinClause|Builder
+     * @return JoinClause|BaseBuilder
      */
     public function query($query = null)
     {
@@ -225,7 +227,7 @@ class JoinClause
             $query = tap($this->query->newQuery(), $query);
         }
 
-        if ($query instanceof Builder) {
+        if ($query instanceof BaseBuilder) {
             $this->table(new Expression("({$query->toSql()})"));
         }
 
@@ -235,9 +237,9 @@ class JoinClause
     /**
      * Get sub-query builder.
      *
-     * @return Builder
+     * @return BaseBuilder
      */
-    public function subQuery(): Builder
+    public function subQuery(): BaseBuilder
     {
         return $this->subQuery = $this->query->newQuery();
     }
@@ -285,9 +287,9 @@ class JoinClause
     /**
      * Get sub-query.
      *
-     * @return Builder|null
+     * @return BaseBuilder|null
      */
-    public function getSubQuery(): ?Builder
+    public function getSubQuery(): ?BaseBuilder
     {
         return $this->subQuery;
     }

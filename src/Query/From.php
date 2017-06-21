@@ -26,23 +26,23 @@ class From
     private $final;
 
     /**
-     * Builder is needed to pass bindings in main query.
+     * BaseBuilder is needed to pass bindings in main query.
      *
-     * @var Builder
+     * @var BaseBuilder
      */
     private $query;
 
     /**
-     * Query which was made with sub-query builder.
+     * Query which was made with sub-query BaseBuilder.
      *
-     * @var Builder|null
+     * @var BaseBuilder|null
      */
     private $subQuery;
 
     /**
      * From constructor.
      *
-     * @param Builder $query
+     * @param BaseBuilder $query
      */
     public function __construct(BaseBuilder $query)
     {
@@ -142,9 +142,9 @@ class From
     /**
      * Executes sub-query in from statement.
      *
-     * @param \Closure|Builder|null $query
+     * @param \Closure|BaseBuilder|null $query
      *
-     * @return From|Builder
+     * @return From|BaseBuilder
      */
     public function query($query = null)
     {
@@ -156,7 +156,7 @@ class From
             $query = tap($this->query->newQuery(), $query);
         }
 
-        if ($query instanceof Builder) {
+        if ($query instanceof BaseBuilder) {
             if (is_null($this->alias) && !is_null($this->table)) {
                 $this->as($this->table);
             }
@@ -170,9 +170,9 @@ class From
     /**
      * Get sub-query.
      *
-     * @return Builder
+     * @return BaseBuilder
      */
-    public function subQuery() : Builder
+    public function subQuery() : BaseBuilder
     {
         return $this->subQuery = $this->query->newQuery();
     }
@@ -208,11 +208,11 @@ class From
     }
 
     /**
-     * Get sub-query builder.
+     * Get sub-query BaseBuilder.
      *
-     * @return null|Builder
+     * @return null|BaseBuilder
      */
-    public function getSubQuery() : ?Builder
+    public function getSubQuery() : ?BaseBuilder
     {
         return $this->subQuery;
     }

@@ -274,7 +274,7 @@ class Column
             $query = tap($this->query->newQuery(), $query);
         }
 
-        if ($query instanceof Builder) {
+        if ($query instanceof BaseBuilder) {
             if (is_null($this->alias) && !is_null($this->columnName)) {
                 $this->alias($this->columnName);
             }

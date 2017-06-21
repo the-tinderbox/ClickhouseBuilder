@@ -179,6 +179,31 @@ $buulder->from('table')->leftJoin('table', 'any', ['column']);
 $buulder->from('table')->innerJoin('table', 'all', ['column']);
 ```
 
+### Temporary tables usage
+
+There are some cases when you need to filter f.e. users by their ids, but amount of ids is huge. You can
+store users ids in local file, upload it to server and use it as temporary table.
+
+```php
+/*
+ * Add file with users ids to builder as _users table
+ * Also, we must define data structure in file. In example below
+ * structure will be like ['UInt64']
+ */
+$builder->addFile('users.csv', '_users', ['UInt64']);
+$builder->select(raw('count()'))->from('clicks')->whereIn('userId', new Identifier('_users'));
+```
+
+Will produce:
+
+```sql
+SELECT count() FROM `clicks` WHERE `userId` IN `_users`
+```
+
+**If you want tables to be detected automatically, call `addFile` method before calling `whereIn`.**
+
+You can use local files in `whereIn`, `prewhereIn`, `havingIn` and `join` statements of query builder.
+
 ### Prewhere, where, having
 All example will be about where, but same behavior also is for prewhere and having. 
 
@@ -375,7 +400,7 @@ SELECT * FROM `table` UNION ALL SELECT `column1` FROM `table` UNION ALL SELECT `
 ### Performing request and getting result.
 
 After building request you must call `get()` method for sending request to the server.
-Also there has opportunity to make asynchronous requests. Its works almost like `unitAll`.
+Also there has opportunity to make asynchronous requests. Its works almost like `unionAll`.
 
 ```php
 $builder->from('table')->asyncWithQuery(function($query) {

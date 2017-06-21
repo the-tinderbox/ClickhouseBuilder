@@ -2,6 +2,7 @@
 
 namespace Tinderbox\ClickhouseBuilder\Integrations\Laravel;
 
+use Tinderbox\Clickhouse\Common\Format;
 use Tinderbox\ClickhouseBuilder\Query\BaseBuilder;
 use Tinderbox\ClickhouseBuilder\Query\Grammar;
 
@@ -37,8 +38,20 @@ class Builder extends BaseBuilder
         if (!empty($this->async)) {
             return $this->connection->selectAsync($this->toAsyncSqls());
         } else {
-            return $this->connection->select($this->toSql());
+            return $this->connection->select($this->toSql(), [], $this->getFiles());
         }
+    }
+
+    /**
+     * Perform query and get first row
+     *
+     * @return mixed|null|\Tinderbox\Clickhouse\Query\Result
+     */
+    public function first()
+    {
+        $result = $this->get();
+
+        return $result[0] ?? null;
     }
 
     /**
@@ -63,9 +76,9 @@ class Builder extends BaseBuilder
      *
      * @return array
      */
-    public function insertFiles(array $columns, array $files, string $format = \Tinderbox\Clickhouse\Common\Format::CSV, int $concurrency = 5) : array
+    public function insertFiles(array $columns, array $files, string $format = Format::CSV, int $concurrency = 5) : array
     {
-        return $this->connection->insertFiles($this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
+        return $this->connection->insertFiles((string) $this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
     }
 
     /**

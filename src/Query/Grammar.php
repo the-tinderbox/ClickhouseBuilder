@@ -2,6 +2,7 @@
 
 namespace Tinderbox\ClickhouseBuilder\Query;
 
+use function MongoDB\is_string_array;
 use Tinderbox\ClickhouseBuilder\Exceptions\GrammarException;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
 use Tinderbox\ClickhouseBuilder\Query\Traits\ColumnsComponentCompiler;
@@ -137,14 +138,12 @@ class Grammar
      *
      * @param string|Expression|Identifier|array $value
      *
-     * @return string|array|null
+     * @return string|array|null|int
      */
     public function wrap($value)
     {
         if ($value instanceof Expression) {
             return $value->getValue();
-        } elseif ($value == '*') {
-            return $value;
         } elseif (is_array($value)) {
             return array_map([$this, 'wrap'], $value);
         } elseif (is_string($value)) {
@@ -169,47 +168,15 @@ class Grammar
                 return $value;
             }
 
+            if ($value === '*') {
+                return $value;
+            }
+
             return '`'.str_replace('`', '``', $value).'`';
         } elseif (is_numeric($value)) {
             return $value;
         } else {
             return;
         }
-    }
-
-    /**
-     * Gather all builders from builder. Including nested in async builders.
-     *
-     * @param BaseBuilder $builder
-     *
-     * @return array
-     */
-    private function flatAsyncQueries(BaseBuilder $builder) : array
-    {
-        $result = [];
-
-        foreach ($builder->getAsync() as $query) {
-            if (!empty($query->getAsync())) {
-                $result = array_merge($result, $this->flatAsyncQueries($query));
-            } else {
-                $result[] = $query;
-            }
-        }
-
-        return array_merge([$builder], $result);
-    }
-
-    /**
-     * Gather all builders from builder on any nested level, and return array of sqls from all that builders.
-     *
-     * @param BaseBuilder $builder
-     *
-     * @return array
-     */
-    public function compileAsyncQueries(BaseBuilder $builder) : array
-    {
-        return array_map(function ($query) {
-            return $query->toSql();
-        }, $this->flatAsyncQueries($builder));
     }
 }

@@ -31,20 +31,18 @@ trait TwoElementsLogicExpressionsCompiler
                 $result[] = $concat;
             }
 
-            if ($firstElement = $this->compileElement($firstElement)) {
-                $result[] = $firstElement;
-            }
+            $result[] = $this->compileElement($firstElement);
 
             if (!is_null($operator)) {
                 $result[] = $operator;
             }
 
-            if ($secondElement = $this->compileElement($secondElement)) {
-                $result[] = $secondElement;
-            }
+            $result[] = $this->compileElement($secondElement);
         }
 
-        return implode(' ', $result);
+        return implode(' ', array_filter($result, function ($val) {
+            return is_numeric($val) ? true : (bool) $val;
+        }));
     }
 
     /**
@@ -52,9 +50,9 @@ trait TwoElementsLogicExpressionsCompiler
      *
      * @param mixed $element
      *
-     * @return string
+     * @return string|int
      */
-    private function compileElement($element) : string
+    private function compileElement($element)
     {
         $result = [];
 
@@ -68,6 +66,10 @@ trait TwoElementsLogicExpressionsCompiler
             $result[] = $this->compileColumn($element);
         } elseif (!is_null($element)) {
             $result[] = $this->wrap($element);
+        }
+
+        if (empty($result)) {
+            return '';
         }
 
         return implode(' ', $result);

@@ -3,6 +3,8 @@
 namespace Tinderbox\ClickhouseBuilder\Query;
 
 use Closure;
+use Tinderbox\Clickhouse\Common\TempTable;
+use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinStrict;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinType;
@@ -115,15 +117,22 @@ abstract class BaseBuilder
      * @var array
      */
     protected $async = [];
+    
+    /**
+     * Files which should be sent on server to store into temporary table
+     *
+     * @var array
+     */
+    protected $files = [];
 
     /**
      * Set columns for select statement.
      *
      * @param array|mixed $columns
      *
-     * @return self
+     * @return static
      */
-    public function select(...$columns) : self
+    public function select(...$columns)
     {
         $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
 
@@ -141,9 +150,9 @@ abstract class BaseBuilder
      *
      * @param array|mixed $columns
      *
-     * @return self
+     * @return static
      */
-    public function addSelect(...$columns) : self
+    public function addSelect(...$columns)
     {
         $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
 
@@ -184,7 +193,7 @@ abstract class BaseBuilder
                 }
             }
 
-            if ($value instanceof self) {
+            if ($value instanceof BaseBuilder) {
                 $alias = is_string($column) ? $column : null;
                 $column = (new Column($this))->query($value);
 
@@ -221,16 +230,16 @@ abstract class BaseBuilder
      * @param string                 $alias
      * @param bool                   $isFinal
      *
-     * @return self
+     * @return static
      */
-    public function from($table, string $alias = null, bool $isFinal = null) : self
+    public function from($table, string $alias = null, bool $isFinal = null)
     {
         $this->from = new From($this);
 
         /*
          * If builder instance given, then we assume that from section should contain sub-query
          */
-        if ($table instanceof self) {
+        if ($table instanceof BaseBuilder) {
             $this->from->query($table);
         }
 
@@ -246,7 +255,7 @@ abstract class BaseBuilder
          * If given anything that is not builder instance or callback. For example, string,
          * then we assume that table name was given.
          */
-        if (!$table instanceof Closure && !$table instanceof self) {
+        if (!$table instanceof Closure && !$table instanceof BaseBuilder) {
             $this->from->table($table);
         }
 
@@ -275,9 +284,9 @@ abstract class BaseBuilder
      * @param string|null $alias
      * @param bool|null   $isFinal
      *
-     * @return Builder
+     * @return static
      */
-    public function table($table, string $alias = null, bool $isFinal = null) : self
+    public function table($table, string $alias = null, bool $isFinal = null)
     {
         return $this->from($table, $alias, $isFinal);
     }
@@ -287,9 +296,9 @@ abstract class BaseBuilder
      *
      * @param float $coefficient
      *
-     * @return self
+     * @return static
      */
-    public function sample(float $coefficient) : self
+    public function sample(float $coefficient)
     {
         $this->sample = $coefficient;
 
@@ -301,15 +310,15 @@ abstract class BaseBuilder
      *
      * @param self|Closure $query
      *
-     * @return self
+     * @return static
      */
-    public function unionAll($query) : self
+    public function unionAll($query)
     {
         if ($query instanceof Closure) {
             $query = tap($this->newQuery(), $query);
         }
 
-        if ($query instanceof self) {
+        if ($query instanceof BaseBuilder) {
             $this->unions[] = $query;
         } else {
             throw new \InvalidArgumentException('Argument for unionAll must be closure or builder instance.');
@@ -323,9 +332,9 @@ abstract class BaseBuilder
      *
      * @param string $alias
      *
-     * @return self
+     * @return static
      */
-    public function as(string $alias) : self
+    public function as(string $alias)
     {
         $this->from->as($alias);
 
@@ -337,9 +346,9 @@ abstract class BaseBuilder
      *
      * @param string $alias
      *
-     * @return self
+     * @return static
      */
-    public function alias(string $alias) : self
+    public function alias(string $alias)
     {
         return $this->as($alias);
     }
@@ -349,9 +358,9 @@ abstract class BaseBuilder
      *
      * @param bool $final
      *
-     * @return self
+     * @return static
      */
-    public function final(bool $final = true) : self
+    public function final(bool $final = true)
     {
         $this->from->final($final);
 
@@ -367,7 +376,7 @@ abstract class BaseBuilder
      * @param array|null          $using  Columns to use for join
      * @param bool                $global Global distribution for right table
      *
-     * @return self
+     * @return static
      */
     public function join(
         $table,
@@ -375,13 +384,13 @@ abstract class BaseBuilder
         string $type = null,
         array $using = null,
         bool $global = false
-    ) : self {
+    ) {
         $this->join = new JoinClause($this);
 
         /*
          * If builder instance given, then we assume that sub-query should be used as table in join
          */
-        if ($table instanceof self) {
+        if ($table instanceof BaseBuilder) {
             $this->join->query($table);
         }
 
@@ -397,7 +406,7 @@ abstract class BaseBuilder
          * If given anything that is not builder instance or callback. For example, string,
          * then we assume that table name was given.
          */
-        if (!$table instanceof Closure && !$table instanceof self) {
+        if (!$table instanceof Closure && !$table instanceof BaseBuilder) {
             $this->join->table($table);
         }
 
@@ -435,9 +444,9 @@ abstract class BaseBuilder
      * @param array|null          $using
      * @param bool                $global
      *
-     * @return self
+     * @return static
      */
-    public function leftJoin($table, string $strict = null, array $using = null, bool $global = false) : self
+    public function leftJoin($table, string $strict = null, array $using = null, bool $global = false)
     {
         return $this->join($table, $strict ?? JoinStrict::ALL, JoinType::LEFT, $using, $global);
     }
@@ -452,9 +461,9 @@ abstract class BaseBuilder
      * @param array|null          $using
      * @param bool                $global
      *
-     * @return self
+     * @return static
      */
-    public function innerJoin($table, string $strict = null, array $using = null, bool $global = false) : self
+    public function innerJoin($table, string $strict = null, array $using = null, bool $global = false)
     {
         return $this->join($table, $strict ?? JoinStrict::ALL, JoinType::INNER, $using, $global);
     }
@@ -468,9 +477,9 @@ abstract class BaseBuilder
      * @param array|null          $using
      * @param bool                $global
      *
-     * @return self
+     * @return static
      */
-    public function anyLeftJoin($table, array $using = null, bool $global = false) : self
+    public function anyLeftJoin($table, array $using = null, bool $global = false)
     {
         return $this->join($table, JoinStrict::ANY, JoinType::LEFT, $using, $global);
     }
@@ -484,9 +493,9 @@ abstract class BaseBuilder
      * @param array|null          $using
      * @param bool                $global
      *
-     * @return self
+     * @return static
      */
-    public function allLeftJoin($table, array $using = null, bool $global = false) : self
+    public function allLeftJoin($table, array $using = null, bool $global = false)
     {
         return $this->join($table, JoinStrict::ALL, JoinType::LEFT, $using, $global);
     }
@@ -500,9 +509,9 @@ abstract class BaseBuilder
      * @param array|null          $using
      * @param bool                $global
      *
-     * @return self
+     * @return static
      */
-    public function anyInnerJoin($table, array $using = null, bool $global = false) : self
+    public function anyInnerJoin($table, array $using = null, bool $global = false)
     {
         return $this->join($table, JoinStrict::ANY, JoinType::INNER, $using, $global);
     }
@@ -516,9 +525,9 @@ abstract class BaseBuilder
      * @param array|null          $using
      * @param bool                $global
      *
-     * @return self
+     * @return static
      */
-    public function allInnerJoin($table, array $using = null, bool $global = false) : self
+    public function allInnerJoin($table, array $using = null, bool $global = false)
     {
         return $this->join($table, JoinStrict::ALL, JoinType::INNER, $using, $global);
     }
@@ -581,14 +590,14 @@ abstract class BaseBuilder
         /*
          * If as column was passed builder instance, than we perform subquery in first element position.
          */
-        if ($column instanceof self) {
+        if ($column instanceof BaseBuilder) {
             $expression->firstElementQuery($column);
         }
 
         /*
          * If builder instance given as value, then we assume that sub-query should be used there.
          */
-        if ($value instanceof self || $value instanceof Closure) {
+        if ($value instanceof BaseBuilder || $value instanceof Closure) {
             $expression->secondElementQuery($value);
         }
 
@@ -666,9 +675,9 @@ abstract class BaseBuilder
      * @param TwoElementsLogicExpression|self|Closure|string|null $value
      * @param string                                              $concatOperator
      *
-     * @return self
+     * @return static
      */
-    public function preWhere($column, $operator = null, $value = null, string $concatOperator = Operator::AND) : self
+    public function preWhere($column, $operator = null, $value = null, string $concatOperator = Operator::AND)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
 
@@ -688,9 +697,9 @@ abstract class BaseBuilder
      *
      * @param string $expression
      *
-     * @return self
+     * @return static
      */
-    public function preWhereRaw(string $expression) : self
+    public function preWhereRaw(string $expression)
     {
         return $this->preWhere(new Expression($expression));
     }
@@ -700,9 +709,9 @@ abstract class BaseBuilder
      *
      * @param string $expression
      *
-     * @return self
+     * @return static
      */
-    public function orPreWhereRaw(string $expression) : self
+    public function orPreWhereRaw(string $expression)
     {
         return $this->preWhere(new Expression($expression), null, null, Operator::OR);
     }
@@ -714,9 +723,9 @@ abstract class BaseBuilder
      * @param null $operator
      * @param null $value
      *
-     * @return self
+     * @return static
      */
-    public function orPreWhere($column, $operator = null, $value = null) : self
+    public function orPreWhere($column, $operator = null, $value = null)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
 
@@ -731,14 +740,16 @@ abstract class BaseBuilder
      * @param string $boolean
      * @param bool   $not
      *
-     * @return self
+     * @return static
      */
-    public function preWhereIn($column, $values, $boolean = Operator::AND, $not = false) : self
+    public function preWhereIn($column, $values, $boolean = Operator::AND, $not = false)
     {
         $type = $not ? Operator::NOT_IN : Operator::IN;
 
         if (is_array($values)) {
             $values = new Tuple($values);
+        } elseif (is_string($values) && isset($this->files[$values])) {
+            $values = new Identifier($values);
         }
 
         return $this->preWhere($column, $type, $values, $boolean);
@@ -750,9 +761,9 @@ abstract class BaseBuilder
      * @param $column
      * @param $values
      *
-     * @return self
+     * @return static
      */
-    public function orPreWhereIn($column, $values) : self
+    public function orPreWhereIn($column, $values)
     {
         return $this->preWhereIn($column, $values, Operator::OR);
     }
@@ -764,9 +775,9 @@ abstract class BaseBuilder
      * @param        $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function preWhereNotIn($column, $values, $boolean = Operator::AND) : self
+    public function preWhereNotIn($column, $values, $boolean = Operator::AND)
     {
         return $this->preWhereIn($column, $values, $boolean, true);
     }
@@ -778,9 +789,9 @@ abstract class BaseBuilder
      * @param        $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function orPreWhereNotIn($column, $values, $boolean = Operator::OR) : self
+    public function orPreWhereNotIn($column, $values, $boolean = Operator::OR)
     {
         return $this->preWhereNotIn($column, $values, $boolean);
     }
@@ -793,9 +804,9 @@ abstract class BaseBuilder
      * @param string $boolean
      * @param bool   $not
      *
-     * @return self
+     * @return static
      */
-    public function preWhereBetween($column, array $values, $boolean = Operator::AND, $not = false) : self
+    public function preWhereBetween($column, array $values, $boolean = Operator::AND, $not = false)
     {
         $type = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
 
@@ -810,9 +821,9 @@ abstract class BaseBuilder
      * @param string $boolean
      * @param bool   $not
      *
-     * @return self
+     * @return static
      */
-    public function preWhereBetweenColumns($column, array $values, $boolean = Operator::AND, $not = false) : self
+    public function preWhereBetweenColumns($column, array $values, $boolean = Operator::AND, $not = false)
     {
         $type = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
 
@@ -826,9 +837,9 @@ abstract class BaseBuilder
      * @param array  $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function preWhereNotBetweenColumns($column, array $values, $boolean = Operator::AND) : self
+    public function preWhereNotBetweenColumns($column, array $values, $boolean = Operator::AND)
     {
         return $this->preWhere($column, Operator::NOT_BETWEEN, [new Identifier($values[0]), new Identifier($values[1])], $boolean);
     }
@@ -839,9 +850,9 @@ abstract class BaseBuilder
      * @param       $column
      * @param array $values
      *
-     * @return self
+     * @return static
      */
-    public function orPreWhereBetweenColumns($column, array $values) : self
+    public function orPreWhereBetweenColumns($column, array $values)
     {
         return $this->preWhereBetweenColumns($column, $values, Operator::OR);
     }
@@ -852,9 +863,9 @@ abstract class BaseBuilder
      * @param       $column
      * @param array $values
      *
-     * @return self
+     * @return static
      */
-    public function orPreWhereNotBetweenColumns($column, array $values) : self
+    public function orPreWhereNotBetweenColumns($column, array $values)
     {
         return $this->preWhereNotBetweenColumns($column, $values, Operator::OR);
     }
@@ -865,9 +876,9 @@ abstract class BaseBuilder
      * @param       $column
      * @param array $values
      *
-     * @return self
+     * @return static
      */
-    public function orPreWhereBetween($column, array $values) : self
+    public function orPreWhereBetween($column, array $values)
     {
         return $this->preWhereBetween($column, $values, Operator::OR);
     }
@@ -879,9 +890,9 @@ abstract class BaseBuilder
      * @param array  $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function preWhereNotBetween($column, array $values, $boolean = Operator::AND) : self
+    public function preWhereNotBetween($column, array $values, $boolean = Operator::AND)
     {
         return $this->preWhereBetween($column, $values, $boolean, true);
     }
@@ -892,9 +903,9 @@ abstract class BaseBuilder
      * @param       $column
      * @param array $values
      *
-     * @return self
+     * @return static
      */
-    public function orPreWhereNotBetween($column, array $values) : self
+    public function orPreWhereNotBetween($column, array $values)
     {
         return $this->preWhereNotBetween($column, $values, Operator::OR);
     }
@@ -907,9 +918,9 @@ abstract class BaseBuilder
      * @param mixed                                          $value
      * @param string                                         $concatOperator
      *
-     * @return self
+     * @return static
      */
-    public function where($column, $operator = null, $value = null, string $concatOperator = Operator::AND) : self
+    public function where($column, $operator = null, $value = null, string $concatOperator = Operator::AND)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
 
@@ -929,9 +940,9 @@ abstract class BaseBuilder
      *
      * @param string $expression
      *
-     * @return self
+     * @return static
      */
-    public function whereRaw(string $expression) : self
+    public function whereRaw(string $expression)
     {
         return $this->where(new Expression($expression));
     }
@@ -941,9 +952,9 @@ abstract class BaseBuilder
      *
      * @param string $expression
      *
-     * @return self
+     * @return static
      */
-    public function orWhereRaw(string $expression) : self
+    public function orWhereRaw(string $expression)
     {
         return $this->where(new Expression($expression), null, null, Operator::OR);
     }
@@ -955,9 +966,9 @@ abstract class BaseBuilder
      * @param null $operator
      * @param null $value
      *
-     * @return self
+     * @return static
      */
-    public function orWhere($column, $operator = null, $value = null) : self
+    public function orWhere($column, $operator = null, $value = null)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
 
@@ -972,14 +983,16 @@ abstract class BaseBuilder
      * @param string $boolean
      * @param bool   $not
      *
-     * @return self
+     * @return static
      */
-    public function whereIn($column, $values, $boolean = Operator::AND, $not = false) : self
+    public function whereIn($column, $values, $boolean = Operator::AND, $not = false)
     {
         $type = $not ? Operator::NOT_IN : Operator::IN;
 
         if (is_array($values)) {
             $values = new Tuple($values);
+        } elseif (is_string($values) && isset($this->files[$values])) {
+            $values = new Identifier($values);
         }
 
         return $this->where($column, $type, $values, $boolean);
@@ -993,14 +1006,16 @@ abstract class BaseBuilder
      * @param string $boolean
      * @param bool   $not
      *
-     * @return self
+     * @return static
      */
-    public function whereGlobalIn($column, $values, $boolean = Operator::AND, $not = false) : self
+    public function whereGlobalIn($column, $values, $boolean = Operator::AND, $not = false)
     {
         $type = $not ? Operator::GLOBAL_NOT_IN : Operator::GLOBAL_IN;
 
         if (is_array($values)) {
             $values = new Tuple($values);
+        } elseif (is_string($values) && isset($this->files[$values])) {
+            $values = new Identifier($values);
         }
 
         return $this->where($column, $type, $values, $boolean);
@@ -1012,9 +1027,9 @@ abstract class BaseBuilder
      * @param $column
      * @param $values
      *
-     * @return self
+     * @return static
      */
-    public function orWhereGlobalIn($column, $values) : self
+    public function orWhereGlobalIn($column, $values)
     {
         return $this->whereGlobalIn($column, $values, Operator::OR);
     }
@@ -1026,9 +1041,9 @@ abstract class BaseBuilder
      * @param        $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function whereGlobalNotIn($column, $values, $boolean = Operator::AND) : self
+    public function whereGlobalNotIn($column, $values, $boolean = Operator::AND)
     {
         return $this->whereGlobalIn($column, $values, $boolean, true);
     }
@@ -1040,9 +1055,9 @@ abstract class BaseBuilder
      * @param        $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function orWhereGlobalNotIn($column, $values, $boolean = Operator::OR) : self
+    public function orWhereGlobalNotIn($column, $values, $boolean = Operator::OR)
     {
         return $this->whereGlobalNotIn($column, $values, $boolean);
     }
@@ -1053,9 +1068,9 @@ abstract class BaseBuilder
      * @param $column
      * @param $values
      *
-     * @return self
+     * @return static
      */
-    public function orWhereIn($column, $values) : self
+    public function orWhereIn($column, $values)
     {
         return $this->whereIn($column, $values, Operator::OR);
     }
@@ -1067,9 +1082,9 @@ abstract class BaseBuilder
      * @param        $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function whereNotIn($column, $values, $boolean = Operator::AND) : self
+    public function whereNotIn($column, $values, $boolean = Operator::AND)
     {
         return $this->whereIn($column, $values, $boolean, true);
     }
@@ -1081,9 +1096,9 @@ abstract class BaseBuilder
      * @param        $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function orWhereNotIn($column, $values, $boolean = Operator::OR) : self
+    public function orWhereNotIn($column, $values, $boolean = Operator::OR)
     {
         return $this->whereNotIn($column, $values, $boolean);
     }
@@ -1096,9 +1111,9 @@ abstract class BaseBuilder
      * @param string $boolean
      * @param bool   $not
      *
-     * @return self
+     * @return static
      */
-    public function whereBetween($column, array $values, $boolean = Operator::AND, $not = false) : self
+    public function whereBetween($column, array $values, $boolean = Operator::AND, $not = false)
     {
         $operator = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
 
@@ -1113,9 +1128,9 @@ abstract class BaseBuilder
      * @param string $boolean
      * @param bool   $not
      *
-     * @return self
+     * @return static
      */
-    public function whereBetweenColumns($column, array $values, $boolean = Operator::AND, $not = false) : self
+    public function whereBetweenColumns($column, array $values, $boolean = Operator::AND, $not = false)
     {
         $type = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
 
@@ -1128,9 +1143,9 @@ abstract class BaseBuilder
      * @param       $column
      * @param array $values
      *
-     * @return self
+     * @return static
      */
-    public function orWhereBetweenColumns($column, array $values) : self
+    public function orWhereBetweenColumns($column, array $values)
     {
         return $this->whereBetweenColumns($column, $values, Operator::OR);
     }
@@ -1141,9 +1156,9 @@ abstract class BaseBuilder
      * @param       $column
      * @param array $values
      *
-     * @return self
+     * @return static
      */
-    public function orWhereBetween($column, array $values) : self
+    public function orWhereBetween($column, array $values)
     {
         return $this->whereBetween($column, $values, Operator::OR);
     }
@@ -1155,9 +1170,9 @@ abstract class BaseBuilder
      * @param array  $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function whereNotBetween($column, array $values, $boolean = Operator::AND) : self
+    public function whereNotBetween($column, array $values, $boolean = Operator::AND)
     {
         return $this->whereBetween($column, $values, $boolean, true);
     }
@@ -1168,9 +1183,9 @@ abstract class BaseBuilder
      * @param       $column
      * @param array $values
      *
-     * @return self
+     * @return static
      */
-    public function orWhereNotBetween($column, array $values) : self
+    public function orWhereNotBetween($column, array $values)
     {
         return $this->whereNotBetween($column, $values, Operator::OR);
     }
@@ -1183,9 +1198,9 @@ abstract class BaseBuilder
      * @param mixed                                          $value
      * @param string                                         $concatOperator
      *
-     * @return self
+     * @return static
      */
-    public function having($column, $operator = null, $value = null, string $concatOperator = Operator::AND) : self
+    public function having($column, $operator = null, $value = null, string $concatOperator = Operator::AND)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
 
@@ -1199,9 +1214,9 @@ abstract class BaseBuilder
      *
      * @param string $expression
      *
-     * @return self
+     * @return static
      */
-    public function havingRaw(string $expression) : self
+    public function havingRaw(string $expression)
     {
         return $this->having(new Expression($expression));
     }
@@ -1211,9 +1226,9 @@ abstract class BaseBuilder
      *
      * @param string $expression
      *
-     * @return self
+     * @return static
      */
-    public function orHavingRaw(string $expression) : self
+    public function orHavingRaw(string $expression)
     {
         return $this->having(new Expression($expression), null, null, Operator::OR);
     }
@@ -1225,9 +1240,9 @@ abstract class BaseBuilder
      * @param null $operator
      * @param null $value
      *
-     * @return self
+     * @return static
      */
-    public function orHaving($column, $operator = null, $value = null) : self
+    public function orHaving($column, $operator = null, $value = null)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
 
@@ -1242,14 +1257,16 @@ abstract class BaseBuilder
      * @param string $boolean
      * @param bool   $not
      *
-     * @return self
+     * @return static
      */
-    public function havingIn($column, $values, $boolean = Operator::AND, $not = false) : self
+    public function havingIn($column, $values, $boolean = Operator::AND, $not = false)
     {
         $type = $not ? Operator::NOT_IN : Operator::IN;
 
         if (is_array($values)) {
             $values = new Tuple($values);
+        } elseif (is_string($values) && isset($this->files[$values])) {
+            $values = new Identifier($values);
         }
 
         return $this->having($column, $type, $values, $boolean);
@@ -1261,9 +1278,9 @@ abstract class BaseBuilder
      * @param $column
      * @param $values
      *
-     * @return self
+     * @return static
      */
-    public function orHavingIn($column, $values) : self
+    public function orHavingIn($column, $values)
     {
         return $this->havingIn($column, $values, Operator::OR);
     }
@@ -1275,9 +1292,9 @@ abstract class BaseBuilder
      * @param        $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function havingNotIn($column, $values, $boolean = Operator::AND) : self
+    public function havingNotIn($column, $values, $boolean = Operator::AND)
     {
         return $this->havingIn($column, $values, $boolean, true);
     }
@@ -1289,9 +1306,9 @@ abstract class BaseBuilder
      * @param        $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function orHavingNotIn($column, $values, $boolean = Operator::OR) : self
+    public function orHavingNotIn($column, $values, $boolean = Operator::OR)
     {
         return $this->havingNotIn($column, $values, $boolean);
     }
@@ -1304,9 +1321,9 @@ abstract class BaseBuilder
      * @param string $boolean
      * @param bool   $not
      *
-     * @return self
+     * @return static
      */
-    public function havingBetween($column, array $values, $boolean = Operator::AND, $not = false) : self
+    public function havingBetween($column, array $values, $boolean = Operator::AND, $not = false)
     {
         $operator = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
 
@@ -1321,9 +1338,9 @@ abstract class BaseBuilder
      * @param string $boolean
      * @param bool   $not
      *
-     * @return self
+     * @return static
      */
-    public function havingBetweenColumns($column, array $values, $boolean = Operator::AND, $not = false) : self
+    public function havingBetweenColumns($column, array $values, $boolean = Operator::AND, $not = false)
     {
         $type = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
 
@@ -1336,9 +1353,9 @@ abstract class BaseBuilder
      * @param       $column
      * @param array $values
      *
-     * @return self
+     * @return static
      */
-    public function orHavingBetweenColumns($column, array $values) : self
+    public function orHavingBetweenColumns($column, array $values)
     {
         return $this->havingBetweenColumns($column, $values, Operator::OR);
     }
@@ -1349,9 +1366,9 @@ abstract class BaseBuilder
      * @param       $column
      * @param array $values
      *
-     * @return self
+     * @return static
      */
-    public function orHavingBetween($column, array $values) : self
+    public function orHavingBetween($column, array $values)
     {
         return $this->havingBetween($column, $values, Operator::OR);
     }
@@ -1363,9 +1380,9 @@ abstract class BaseBuilder
      * @param array  $values
      * @param string $boolean
      *
-     * @return self
+     * @return static
      */
-    public function havingNotBetween($column, array $values, $boolean = Operator::AND) : self
+    public function havingNotBetween($column, array $values, $boolean = Operator::AND)
     {
         return $this->havingBetween($column, $values, $boolean, true);
     }
@@ -1376,9 +1393,9 @@ abstract class BaseBuilder
      * @param       $column
      * @param array $values
      *
-     * @return self
+     * @return static
      */
-    public function orHavingNotBetween($column, array $values) : self
+    public function orHavingNotBetween($column, array $values)
     {
         return $this->havingNotBetween($column, $values, Operator::OR);
     }
@@ -1391,9 +1408,9 @@ abstract class BaseBuilder
      * @param array|string $key
      * @param string       $as
      *
-     * @return self
+     * @return static
      */
-    public function addSelectDict(string $dict, string $attribute, $key, string $as = null) : self
+    public function addSelectDict(string $dict, string $attribute, $key, string $as = null)
     {
         if (is_null($as)) {
             $as = $attribute;
@@ -1415,7 +1432,7 @@ abstract class BaseBuilder
      * @param              $value
      * @param string       $concatOperator
      *
-     * @return self
+     * @return static
      */
     public function whereDict(
         string $dict,
@@ -1424,7 +1441,7 @@ abstract class BaseBuilder
         $operator = null,
         $value = null,
         string $concatOperator = Operator::AND
-    ) : self {
+    ) {
         $this->addSelectDict($dict, $attribute, $key);
 
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 4);
@@ -1441,7 +1458,7 @@ abstract class BaseBuilder
      * @param $operator
      * @param $value
      *
-     * @return self
+     * @return static
      */
     public function orWhereDict(
         string $dict,
@@ -1449,7 +1466,7 @@ abstract class BaseBuilder
         $key,
         $operator = null,
         $value = null
-    ) : self {
+    ) {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 4);
 
         return $this->whereDict($dict, $attribute, $key, $operator, $value, Operator::OR);
@@ -1460,9 +1477,9 @@ abstract class BaseBuilder
      *
      * @param Closure|self|null $asyncQueries
      *
-     * @return self
+     * @return static
      */
-    public function asyncWithQuery($asyncQueries = null) : self
+    public function asyncWithQuery($asyncQueries = null)
     {
         if (is_null($asyncQueries)) {
             return $this->async[] = $this->newQuery();
@@ -1472,7 +1489,7 @@ abstract class BaseBuilder
             $asyncQueries = tap($this->newQuery(), $asyncQueries);
         }
 
-        if ($asyncQueries instanceof self) {
+        if ($asyncQueries instanceof BaseBuilder) {
             $this->async[] = $asyncQueries;
         } else {
             throw new \InvalidArgumentException('Argument for async method must be Closure, Builder or nothing');
@@ -1487,9 +1504,9 @@ abstract class BaseBuilder
      * @param int      $limit
      * @param int|null $offset
      *
-     * @return self
+     * @return static
      */
-    public function limit(int $limit, int $offset = null) : self
+    public function limit(int $limit, int $offset = null)
     {
         $this->limit = new Limit($limit, $offset);
 
@@ -1502,9 +1519,9 @@ abstract class BaseBuilder
      * @param int   $count
      * @param array ...$columns
      *
-     * @return self
+     * @return static
      */
-    public function limitBy(int $count, ...$columns) : self
+    public function limitBy(int $count, ...$columns)
     {
         $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
 
@@ -1519,9 +1536,9 @@ abstract class BaseBuilder
      * @param int      $limit
      * @param int|null $offset
      *
-     * @return self
+     * @return static
      */
-    public function take(int $limit, int $offset = null) : self
+    public function take(int $limit, int $offset = null)
     {
         return $this->limit($limit, $offset);
     }
@@ -1532,9 +1549,9 @@ abstract class BaseBuilder
      * @param int   $count
      * @param array ...$columns
      *
-     * @return self
+     * @return static
      */
-    public function takeBy(int $count, ...$columns) : self
+    public function takeBy(int $count, ...$columns)
     {
         return $this->limitBy($count, ...$columns);
     }
@@ -1544,9 +1561,9 @@ abstract class BaseBuilder
      *
      * @param $columns
      *
-     * @return self
+     * @return static
      */
-    public function groupBy(...$columns) : self
+    public function groupBy(...$columns)
     {
         $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
 
@@ -1566,9 +1583,9 @@ abstract class BaseBuilder
      * @param string         $direction
      * @param string|null    $collate
      *
-     * @return self
+     * @return static
      */
-    public function orderBy($column, string $direction = 'asc', string $collate = null) : self
+    public function orderBy($column, string $direction = 'asc', string $collate = null)
     {
         $column = $this->processColumns([$column], false)[0];
 
@@ -1584,9 +1601,9 @@ abstract class BaseBuilder
      *
      * @param string $expression
      *
-     * @return self
+     * @return static
      */
-    public function orderByRaw(string $expression) : self
+    public function orderByRaw(string $expression)
     {
         $column = $this->processColumns([new Expression($expression)], false)[0];
         $this->orders[] = [$column, null, null];
@@ -1600,9 +1617,9 @@ abstract class BaseBuilder
      * @param             $column
      * @param string|null $collate
      *
-     * @return self
+     * @return static
      */
-    public function orderByAsc($column, string $collate = null) : self
+    public function orderByAsc($column, string $collate = null)
     {
         return $this->orderBy($column, OrderDirection::ASC, $collate);
     }
@@ -1613,9 +1630,9 @@ abstract class BaseBuilder
      * @param             $column
      * @param string|null $collate
      *
-     * @return self
+     * @return static
      */
-    public function orderByDesc($column, string $collate = null) : self
+    public function orderByDesc($column, string $collate = null)
     {
         return $this->orderBy($column, OrderDirection::DESC, $collate);
     }
@@ -1625,9 +1642,9 @@ abstract class BaseBuilder
      *
      * @param string $format
      *
-     * @return self
+     * @return static
      */
-    public function format(string $format) : self
+    public function format(string $format)
     {
         $this->format = new Format(strtoupper($format));
 
@@ -1651,7 +1668,9 @@ abstract class BaseBuilder
      */
     public function toAsyncSqls() : array
     {
-        return $this->grammar->compileAsyncQueries($this);
+        return array_map(function ($query) {
+            return [$query->toSql(), [], $query->getFiles()];
+        }, $this->getAsyncQueries());
     }
 
     /**
@@ -1783,14 +1802,53 @@ abstract class BaseBuilder
     {
         return $this->format;
     }
-
+    
     /**
-     * Get query builders which must be run asynchronous.
+     * Add file which should be sent on server
+     *
+     * @param string      $filePath
+     * @param string      $tableName
+     * @param array       $structure
+     * @param string|null $format
+     *
+     * @return static
+     *
+     * @throws BuilderException
+     */
+    public function addFile(string $filePath, string $tableName, array $structure, string $format = Format::CSV)
+    {
+        if (isset($this->files[$tableName])) {
+            throw BuilderException::temporaryTableAlreadyExists($tableName);
+        }
+        
+        $this->files[$tableName] = new TempTable($tableName, $filePath, $structure, $format);
+        
+        return $this;
+    }
+    
+    /**
+     * Returns files which should be sent on server
      *
      * @return array
      */
-    public function getAsync() : array
+    public function getFiles(): array
     {
-        return $this->async;
+        return $this->files;
+    }
+
+    /**
+     * Gather all builders from builder. Including nested in async builders.
+     *
+     * @return array
+     */
+    public function getAsyncQueries() : array
+    {
+        $result = [];
+
+        foreach ($this->async as $query) {
+            $result = array_merge($query->getAsyncQueries(), $result);
+        }
+
+        return array_merge([$this], $result);
     }
 }

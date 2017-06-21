@@ -269,13 +269,13 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @param string $query
      * @param array  $bindings
-     * @param bool   $useReadPdo
+     * @param array $tables
      *
      * @return array
      */
-    public function select($query, $bindings = [], $useReadPdo = true)
+    public function select($query, $bindings = [], $tables = [])
     {
-        $result = $this->getClient()->select($query, $bindings);
+        $result = $this->getClient()->select($query, $bindings, $tables);
 
         $this->logQuery($query, $bindings, $result->getStatistic()->getTime());
 
@@ -292,15 +292,17 @@ class Connection extends \Illuminate\Database\Connection
     public function selectAsync(array $queries)
     {
         $results = $this->getClient()->selectAsync($queries);
+        $queriesKeys = array_keys($queries);
 
         foreach ($results as $i => $result) {
             /* @var \Tinderbox\Clickhouse\Query\Result $result */
 
-            list($query, $bindings) = $queries[$i];
+            $query = $queries[$queriesKeys[$i]][0];
+            $bindings = $queries[$queriesKeys[$i]][1] ?? [];
 
             $this->logQuery($query, $bindings, $result->getStatistic()->getTime());
 
-            $results[$i] = $result->getRows();
+            $results[$queriesKeys[$i]] = $result->getRows();
         }
 
         return $results;

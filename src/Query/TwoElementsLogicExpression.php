@@ -124,7 +124,7 @@ class TwoElementsLogicExpression
             $query = tap($this->query->newQuery(), $query);
         }
 
-        if ($query instanceof Builder) {
+        if ($query instanceof BaseBuilder) {
             $this->firstElement(new Expression("({$query->toSql()})"));
         }
 
@@ -144,7 +144,7 @@ class TwoElementsLogicExpression
             $query = tap($this->query->newQuery(), $query);
         }
 
-        if ($query instanceof Builder) {
+        if ($query instanceof BaseBuilder) {
             $this->secondElement(new Expression("({$query->toSql()})"));
         }
 
