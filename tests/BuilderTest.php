@@ -660,6 +660,15 @@ class BuilderTest extends TestCase
         $this->assertEquals("SELECT dictGetString('dictionary', 'attribute', tuple('key', 1)) as `attribute`, dictGetString('dictionary2', 'attribute2', 5) as `attribute2` FROM `table` WHERE `attribute` != 'value' OR `attribute2` = 5", $builder->toSql());
     }
 
+    public function test_count()
+    {
+        $builder = $this->getBuilder()->from('table')->select('column1', 'column2', 'column3')->orderBy('column1')->getCountQuery('*');
+        $this->assertEquals('SELECT count(*) as `count` FROM `table`', $builder->toSql());
+
+        $builder = $this->getBuilder()->from('table')->select('column1', 'column2', 'column3')->groupBy('column2')->orderBy('column1')->getCountQuery('*');
+        $this->assertEquals('SELECT count(*) as `count` FROM `table` GROUP BY `column2` ORDER BY `column1` ASC', $builder->toSql());
+    }
+
     public function test_group_by()
     {
         $builder = $this->getBuilder()->from('table')->groupBy('column');
@@ -669,6 +678,15 @@ class BuilderTest extends TestCase
         $this->assertEquals('SELECT * FROM `table` GROUP BY `column`, `column2`', $builder->toSql());
 
         $builder = $this->getBuilder()->from('table')->groupBy(['column', 'column2' => 'a']);
+        $this->assertEquals('SELECT * FROM `table` GROUP BY `column`, `column2`', $builder->toSql());
+    }
+
+    public function test_add_group_by()
+    {
+        $builder = $this->getBuilder()->from('table')->groupBy('column')->addGroupBy('column2', 'column3');
+        $this->assertEquals('SELECT * FROM `table` GROUP BY `column`, `column2`, `column3`', $builder->toSql());
+
+        $builder = $this->getBuilder()->from('table')->addGroupBy(['column', 'column2' => 'a']);
         $this->assertEquals('SELECT * FROM `table` GROUP BY `column`, `column2`', $builder->toSql());
     }
 

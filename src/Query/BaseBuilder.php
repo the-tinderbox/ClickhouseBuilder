@@ -145,6 +145,32 @@ abstract class BaseBuilder
         return $this;
     }
 
+    public function getCountQuery($column = '*')
+    {
+        $builder = $this->cloneWithout(['columns'])->select(raw('count('.$column.') as `count`'));
+
+        if (empty($builder->groups)) {
+            $builder->orders = [];
+        }
+
+        return $builder;
+    }
+
+    /**
+     * Clone the query without the given properties.
+     *
+     * @param  array  $except
+     * @return static
+     */
+    public function cloneWithout(array $except)
+    {
+        return tap(clone $this, function ($clone) use ($except) {
+            foreach ($except as $property) {
+                $clone->{$property} = null;
+            }
+        });
+    }
+
     /**
      * Add columns to exist select statement.
      *
@@ -1572,6 +1598,26 @@ abstract class BaseBuilder
         }
 
         $this->groups = $this->processColumns($columns, false);
+
+        return $this;
+    }
+
+    /**
+     * Add group by statement to exist group statements
+     *
+     * @param $columns
+     *
+     * @return static
+     */
+    public function addGroupBy(...$columns)
+    {
+        $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
+
+        if (empty($columns)) {
+            $columns[] = '*';
+        }
+
+        $this->groups = array_merge($this->groups, $this->processColumns($columns, false));
 
         return $this;
     }

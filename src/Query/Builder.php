@@ -41,6 +41,21 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * Performs compiled sql for count rows only. May be used for pagination
+     * Works only without async queries.
+     *
+     * @param string $column Column to pass into count() aggregate function
+     *
+     * @return int|mixed
+     */
+    public function count($column = '*')
+    {
+        $result = $this->getCountQuery($column)->get();
+
+        return $result[0]['count'] ?? 0;
+    }
+
+    /**
      * Makes clean instance of builder.
      *
      * @return self
