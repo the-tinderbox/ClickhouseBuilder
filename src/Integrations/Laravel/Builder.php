@@ -52,9 +52,14 @@ class Builder extends BaseBuilder
      */
     public function count($column = '*')
     {
-        $result = $this->getCountQuery($column)->get();
+        $builder = $this->getCountQuery($column);
+        $result = $builder->get();
 
-        return $result[0]['count'] ?? 0;
+        if (!empty($this->groups)) {
+            return count($result);
+        } else {
+            return $result[0]['count'] ?? 0;
+        }
     }
 
     /**

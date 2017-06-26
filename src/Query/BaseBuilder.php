@@ -145,13 +145,22 @@ abstract class BaseBuilder
         return $this;
     }
 
+    /**
+     * Returns query for count total rows without limit
+     *
+     * @param string $column
+     *
+     * @return static
+     */
     public function getCountQuery($column = '*')
     {
-        $builder = $this->cloneWithout(['columns'])->select(raw('count('.$column.') as `count`'));
+        $without = ['columns' => [], 'limit' => null];
 
-        if (empty($builder->groups)) {
-            $builder->orders = [];
+        if (empty($this->groups)) {
+            $without['orders'] = [];
         }
+
+        $builder = $this->cloneWithout($without)->select(raw('count('.$column.') as `count`'));
 
         return $builder;
     }
@@ -165,8 +174,8 @@ abstract class BaseBuilder
     public function cloneWithout(array $except)
     {
         return tap(clone $this, function ($clone) use ($except) {
-            foreach ($except as $property) {
-                $clone->{$property} = null;
+            foreach ($except as $property => $value) {
+                $clone->{$property} = $value;
             }
         });
     }

@@ -662,10 +662,10 @@ class BuilderTest extends TestCase
 
     public function test_count()
     {
-        $builder = $this->getBuilder()->from('table')->select('column1', 'column2', 'column3')->orderBy('column1')->getCountQuery('*');
+        $builder = $this->getBuilder()->from('table')->select('column1', 'column2', 'column3')->orderBy('column1')->limit(10)->getCountQuery('*');
         $this->assertEquals('SELECT count(*) as `count` FROM `table`', $builder->toSql());
 
-        $builder = $this->getBuilder()->from('table')->select('column1', 'column2', 'column3')->groupBy('column2')->orderBy('column1')->getCountQuery('*');
+        $builder = $this->getBuilder()->from('table')->select('column1', 'column2', 'column3')->groupBy('column2')->orderBy('column1')->limit(10)->getCountQuery('*');
         $this->assertEquals('SELECT count(*) as `count` FROM `table` GROUP BY `column2` ORDER BY `column1` ASC', $builder->toSql());
     }
 
