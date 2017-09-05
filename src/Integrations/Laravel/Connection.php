@@ -291,18 +291,17 @@ class Connection extends \Illuminate\Database\Connection
      */
     public function selectAsync(array $queries)
     {
-        $results = $this->getClient()->selectAsync($queries);
         $queriesKeys = array_keys($queries);
-
+        $results = array_combine($queriesKeys, $this->getClient()->selectAsync($queries));
+        
         foreach ($results as $i => $result) {
             /* @var \Tinderbox\Clickhouse\Query\Result $result */
-
-            $query = $queries[$queriesKeys[$i]][0];
-            $bindings = $queries[$queriesKeys[$i]][1] ?? [];
+            $query = $queries[$i][0];
+            $bindings = $queries[$i][1] ?? [];
 
             $this->logQuery($query, $bindings, $result->getStatistic()->getTime());
 
-            $results[$queriesKeys[$i]] = $result->getRows();
+            $results[$i] = $result->getRows();
         }
 
         return $results;

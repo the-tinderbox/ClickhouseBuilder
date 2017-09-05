@@ -2,12 +2,17 @@
 
 namespace Tinderbox\ClickhouseBuilder\Integrations\Laravel;
 
+use Illuminate\Support\Traits\Macroable;
 use Tinderbox\Clickhouse\Common\Format;
 use Tinderbox\ClickhouseBuilder\Query\BaseBuilder;
 use Tinderbox\ClickhouseBuilder\Query\Grammar;
 
 class Builder extends BaseBuilder
 {
+    use Macroable {
+        __call as macroCall;
+    }
+    
     /**
      * Connection which is used to perform queries.
      *

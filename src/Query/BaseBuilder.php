@@ -40,6 +40,13 @@ abstract class BaseBuilder
      * @var JoinClause
      */
     protected $join;
+    
+    /**
+     * Array join clause.
+     *
+     * @var ArrayJoinClause
+     */
+    protected $arrayJoin;
 
     /**
      * Prewhere statements.
@@ -276,6 +283,8 @@ abstract class BaseBuilder
          */
         if ($table instanceof BaseBuilder) {
             $this->from->query($table);
+            
+            $this->files = array_merge($this->files, $table->getFiles());
         }
 
         /*
@@ -399,6 +408,21 @@ abstract class BaseBuilder
     {
         $this->from->final($final);
 
+        return $this;
+    }
+    
+    /**
+     * Add array join to query.
+     *
+     * @param string|Expression $arrayIdentifier
+     *
+     * @return static
+     */
+    public function arrayJoin($arrayIdentifier)
+    {
+        $this->arrayJoin = new ArrayJoinClause($this);
+        $this->arrayJoin->array($arrayIdentifier);
+        
         return $this;
     }
 
@@ -1796,6 +1820,16 @@ abstract class BaseBuilder
     public function getFrom() : ?From
     {
         return $this->from;
+    }
+    
+    /**
+     * Get ArrayJoinClause
+     *
+     * @return null|ArrayJoinClause
+     */
+    public function getArrayJoin() : ?ArrayJoinClause
+    {
+        return $this->arrayJoin;
     }
 
     /**
