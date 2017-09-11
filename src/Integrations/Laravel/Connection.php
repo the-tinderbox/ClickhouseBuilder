@@ -109,6 +109,10 @@ class Connection extends \Illuminate\Database\Connection
         $server = $this->assembleClientServer($config);
 
         $this->client = $this->createClientFor($server);
+
+        if (isset($config['random_server']) && $config['random_server'] === true) {
+            $this->client->useRandomServer(true);
+        }
     }
 
     /**
