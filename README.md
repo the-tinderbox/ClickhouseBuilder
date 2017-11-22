@@ -441,6 +441,8 @@ $app->register(\Tinderbox\ClickhouseBuilder\Integrations\Laravel\ClickhouseServi
 
 Connection configures via `config/database.php`.
 
+**By default used http transport, but you can specify transport via `transport` option.**
+
 Example with alone server:
 
 ```php

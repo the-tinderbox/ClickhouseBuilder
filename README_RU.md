@@ -486,6 +486,8 @@ $app->register(\Tinderbox\ClickhouseBuilder\Integrations\Laravel\ClickhouseServi
 
 Подключение настраивается через `config/database.php`.
 
+**По умолчанию используется http транспорт, но вы можете указать любой другой через опцию `transport`.**
+
 Пример с использованием одного сервера:
 
 ```php

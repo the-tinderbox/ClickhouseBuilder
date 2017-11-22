@@ -5,7 +5,10 @@ namespace Tinderbox\ClickhouseBuilder\Integrations\Laravel;
 use Tinderbox\Clickhouse\Client;
 use Tinderbox\Clickhouse\Cluster;
 use Tinderbox\Clickhouse\Common\ServerOptions;
+use Tinderbox\Clickhouse\Interfaces\TransportInterface;
 use Tinderbox\Clickhouse\Server;
+use Tinderbox\Clickhouse\Transport\ClickhouseCLIClientTransport;
+use Tinderbox\Clickhouse\Transport\HttpTransport;
 use Tinderbox\ClickhouseBuilder\Exceptions\NotSupportedException;
 use Tinderbox\ClickhouseBuilder\Query\Expression;
 
@@ -67,6 +70,10 @@ class Connection extends \Illuminate\Database\Connection
      *      'options' => [
      *          'timeout' => 10,
      *          'protocol' => 'https'
+     *      ],
+     *      'transport' => 'cli',
+     *      'transportOptions' => [
+     *          'executable' => '/usr/bin/clickhouse-client'
      *      ]
      * ];
      *
@@ -108,7 +115,8 @@ class Connection extends \Illuminate\Database\Connection
 
         $server = $this->assembleClientServer($config);
 
-        $this->client = $this->createClientFor($server);
+        $transport = $this->createTransport($config['transport'] ?? 'http', $config['transportOptions'] ?? []);
+        $this->client = $this->createClientFor($server, $transport);
 
         if (isset($config['random_server']) && $config['random_server'] === true) {
             $this->client->useRandomServer(true);
@@ -117,6 +125,8 @@ class Connection extends \Illuminate\Database\Connection
 
     /**
      * Returns given config.
+     *
+     * @param mixed $option
      *
      * @return array
      */
@@ -133,12 +143,34 @@ class Connection extends \Illuminate\Database\Connection
      * Creates Clickhouse client.
      *
      * @param mixed $server
+     * @param TransportInterface $transport
      *
      * @return Client
      */
-    protected function createClientFor($server)
+    protected function createClientFor($server, TransportInterface $transport)
     {
-        return new Client($server);
+        return new Client($server, null, $transport);
+    }
+
+    /**
+     * Creates transport
+     *
+     * @param string $transport
+     * @param array  $options
+     *
+     * @return \Tinderbox\Clickhouse\Interfaces\TransportInterface
+     */
+    protected function createTransport(string $transport, array $options) : TransportInterface
+    {
+        switch ($transport) {
+            case 'http':
+                return new HttpTransport();
+                break;
+
+            case 'cli':
+                return new ClickhouseCLIClientTransport($options['executable'] ?? null);
+                break;
+        }
     }
 
     /**

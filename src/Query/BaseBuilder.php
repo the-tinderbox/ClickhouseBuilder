@@ -451,6 +451,8 @@ abstract class BaseBuilder
          */
         if ($table instanceof BaseBuilder) {
             $this->join->query($table);
+
+            $this->files = array_merge($this->files, $table->getFiles());
         }
 
         /*
