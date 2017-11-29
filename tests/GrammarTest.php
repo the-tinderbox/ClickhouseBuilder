@@ -71,6 +71,21 @@ class GrammarTest extends TestCase
         $this->assertEquals('INSERT INTO `table` (`column`) FORMAT Values (?), (?), (?)', $sql);
     }
 
+    public function testCompileInsertArray()
+    {
+        $builder = $this->getBuilder()->table('table');
+
+        $grammar = new Grammar();
+
+        $sql = $grammar->compileInsert($builder, [
+            ['column' => 'value'],
+            ['column' => 'value 2'],
+            ['column' => [1, 2, 3]],
+        ]);
+
+        $this->assertEquals('INSERT INTO `table` (`column`) FORMAT Values (?), (?), ([?, ?, ?])', $sql);
+    }
+
     public function testCompileInsertWithoutFrom()
     {
         $grammar = new Grammar();
