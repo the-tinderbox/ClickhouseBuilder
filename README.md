@@ -1,5 +1,6 @@
 # Clickhouse Query Builder
-[![Build Status](https://travis-ci.org/the-tinderbox/ClickhouseBuilder.svg?branch=master)](https://travis-ci.org/the-tinderbox/ClickhouseBuilder) [![Coverage Status](https://coveralls.io/repos/github/the-tinderbox/ClickhouseBuilder/badge.svg?branch=master)](https://coveralls.io/github/the-tinderbox/ClickhouseBuilder?branch=master)
+[![Build Status](
+https://travis-ci.org/esazykin/ClickhouseBuilder.svg?branch=master)](https://travis-ci.org/esazykin/ClickhouseBuilder) [![Coverage Status](https://coveralls.io/repos/github/esazykin/ClickhouseBuilder/badge.svg?branch=master)](https://coveralls.io/github/esazykin/ClickhouseBuilder?branch=master)
 
 # Requirements
 
@@ -10,7 +11,7 @@
 Via composer
 
 ```bash
-composer require the-tinderbox/clickhouse-builder
+composer require esazykin/clickhouse-builder
 ```
 
 # Usage
@@ -412,92 +413,3 @@ $builder->from('table')->asyncWithQuery()->from('table');
 This callings will produce the same behavior. Two queries which will be executed asynchronous.
 Now, if you call `get()` method, as result will be returned array, where numeric index correspond to the result of
 request with this number.
-
-### Integrations
-
-#### Laravel
-
-You can use this builder in Laravel/Lumen applications.
-
-**Laravel**
-
-In `config/app.php` add:
-
-```php
-    'providers' => [
-        ...
-        \Tinderbox\ClickhouseBuilder\Integrations\Laravel\ClickhouseServiceProvider::class,
-        ...
-    ]
-```
-
-**Lumen**
-
-In `bootstrap/app.php` add:
-
-```php
-$app->register(\Tinderbox\ClickhouseBuilder\Integrations\Laravel\ClickhouseServiceProvider::class);
-```
-
-Connection configures via `config/database.php`.
-
-**By default used http transport, but you can specify transport via `transport` option.**
-
-Example with alone server:
-
-```php
-'connections' => [
-    'clickhouse' => [
-        'driver' => 'clickhouse',
-        'host' => '',
-        'port' => '',
-        'database' => '',
-        'username' => '',
-        'password' => '',
-        'options' => [
-            'timeout' => 10,
-            'protocol' => 'https'
-        ]
-    ]
-]
-```
-
-Example with cluster:
-
-```php
-'connections' => [
-    'clickhouse' => [
-        'driver' => 'clickhouse',
-        'cluster' => [
-            'server-1' => [
-                'host' => '',
-                'port' => '',
-                'database' => '',
-                'username' => '',
-                'password' => '',
-                'options' => [
-                    'timeout' => 10,
-                    'protocol' => 'https'
-                ]
-            ],
-            'server-2' => [
-                'host' => '',
-                'port' => '',
-                'database' => '',
-                'username' => '',
-                'password' => '',
-                'options' => [
-                    'timeout' => 10,
-                    'protocol' => 'https'
-                ]
-            ]
-        ]
-    ]
-]
-```
-
-Choose server from cluster to perform request:
-
-```php
-DB::connection('clickhouse')->using('server-2')->select(...);
-```
