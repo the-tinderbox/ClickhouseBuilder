@@ -2,22 +2,15 @@
 
 namespace Tinderbox\ClickhouseBuilder;
 
-use Illuminate\Config\Repository;
-use Illuminate\Container\Container;
-use Illuminate\Database\DatabaseServiceProvider;
-use Illuminate\Events\EventServiceProvider;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery as m;
 use PHPUnit\Framework\TestCase;
 use Tinderbox\Clickhouse\Client;
 use Tinderbox\Clickhouse\Cluster;
-use Tinderbox\Clickhouse\Common\Format;
 use Tinderbox\Clickhouse\Query\QueryStatistic;
 use Tinderbox\Clickhouse\Query\Result;
 use Tinderbox\Clickhouse\Server;
 use Tinderbox\ClickhouseBuilder\Exceptions\NotSupportedException;
-use Tinderbox\ClickhouseBuilder\Integrations\Laravel\Builder;
-use Tinderbox\ClickhouseBuilder\Integrations\Laravel\ClickhouseServiceProvider;
 use Tinderbox\ClickhouseBuilder\Integrations\Laravel\Connection;
 use Tinderbox\ClickhouseBuilder\Query\Expression;
 
@@ -62,38 +55,6 @@ class LaravelIntegrationTest extends TestCase
         ];
     }
 
-    public function test_service_provider()
-    {
-        $clickHouseServiceProvider = new ClickhouseServiceProvider(Container::getInstance());
-        $databaseServiceProvider = new DatabaseServiceProvider(Container::getInstance());
-        $eventsServiceProvider = new EventServiceProvider(Container::getInstance());
-        Container::getInstance()->singleton('config', function () {
-            return new Repository([
-                'database' => [
-                    'connections' => [
-                        'clickhouse' => [
-                            'driver'   => 'clickhouse',
-                            'host'     => 'localhost',
-                            'port'     => 8123,
-                            'database' => 'database',
-                            'username' => 'default',
-                            'password' => '',
-                        ],
-                    ],
-                ],
-            ]);
-        });
-
-        $eventsServiceProvider->register();
-        $databaseServiceProvider->register();
-        $databaseServiceProvider->boot();
-        $clickHouseServiceProvider->boot();
-
-        $database = Container::getInstance()->make('db')->connection('clickhouse');
-
-        $this->assertInstanceOf(Connection::class, $database);
-    }
-
     public function test_connection_construct()
     {
         $simpleConnection = new Connection($this->getSimpleConfig());
@@ -113,22 +74,6 @@ class LaravelIntegrationTest extends TestCase
 
         $this->assertEquals($this->getSimpleConfig(), $connection->getConfig());
         $this->assertEquals('localhost', $connection->getConfig('host'));
-    }
-
-    public function test_connection_query()
-    {
-        $connection = new Connection($this->getSimpleConfig());
-
-        $this->assertInstanceOf(Builder::class, $connection->query());
-    }
-
-    public function test_connection_table()
-    {
-        $connection = new Connection($this->getSimpleConfig());
-        $builder = $connection->table('table');
-
-        $this->assertInstanceOf(Builder::class, $builder);
-        $this->assertEquals('SELECT * FROM `table`', $builder->toSql());
     }
 
     public function test_connection_raw()
@@ -203,32 +148,6 @@ class LaravelIntegrationTest extends TestCase
         $connection->setClient($client);
 
         $connection->unprepared('query');
-    }
-
-    public function test_connection_select_async()
-    {
-        $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-
-        $result = m::mock(Result::class);
-        $queryStat = m::mock(QueryStatistic::class);
-
-        $queryStat->shouldReceive('getTime')->andReturn(10);
-        $result->shouldReceive('getStatistic')->andReturn($queryStat);
-        $result->shouldReceive('getRows')->andReturn([]);
-
-        $client->shouldReceive('selectAsync')
-            ->with([
-                'select * from `table1`',
-                'select * from `table2`',
-            ])
-            ->andReturn([$result]);
-        $connection->setClient($client);
-
-        $connection->selectAsync([
-            'select * from `table1`',
-            'select * from `table2`',
-        ]);
     }
 
     public function test_connection_insert()
@@ -318,76 +237,5 @@ class LaravelIntegrationTest extends TestCase
         $connection->setClient($client);
 
         $connection->using('server-1');
-    }
-
-    public function test_builder_get()
-    {
-        $connection = new Connection($this->getClusterConfig());
-        $client = m::mock(Client::class);
-        $result = m::mock(Result::class);
-        $queryStat = m::mock(QueryStatistic::class);
-
-        $queryStat->shouldReceive('getTime')->andReturn(10);
-        $result->shouldReceive('getStatistic')->andReturn($queryStat);
-        $result->shouldReceive('getRows')->andReturn([]);
-
-        $client->shouldReceive('select')->with('SELECT `column` FROM `table`', [], [])->andReturn($result);
-        $connection->setClient($client);
-
-        $connection->table('table')->select('column')->get();
-    }
-
-    public function test_builder_async_get()
-    {
-        $connection = new Connection($this->getClusterConfig());
-        $client = m::mock(Client::class);
-        $result = m::mock(Result::class);
-        $queryStat = m::mock(QueryStatistic::class);
-
-        $queryStat->shouldReceive('getTime')->andReturn(10);
-        $result->shouldReceive('getStatistic')->andReturn($queryStat);
-        $result->shouldReceive('getRows')->andReturn([]);
-
-        $client->shouldReceive('selectAsync')->with([
-            ['SELECT * FROM `table`', [], []], ['SELECT * FROM `table2`', [], []]
-        ])->andReturn([$result]);
-        $connection->setClient($client);
-
-        $connection->table('table')->asyncWithQuery(function ($builder) {
-            $builder->from('table2');
-        })->get();
-    }
-
-    public function test_builder_insert_files()
-    {
-        $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-        $client->shouldReceive('insertFiles')
-            ->with('table', ['column1', 'column2'], ['file1', 'file2'], Format::CSV, 5)
-            ->andReturn([]);
-        $connection->setClient($client);
-
-        $connection->table('table')->insertFiles(['column1', 'column2'], ['file1', 'file2']);
-    }
-
-    public function test_builder_insert()
-    {
-        $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-        $client->shouldReceive('insert')
-            ->with('INSERT INTO `table` (`column`, `column2`) FORMAT Values (?, ?)', ['val', 'val'])
-            ->andReturn(true)->twice();
-        $connection->setClient($client);
-
-        $connection->table('table')->insert(['column' => 'val', 'column2' => 'val']);
-        $connection->table('table')->insert([['column' => 'val', 'column2' => 'val']]);
-
-        $client->shouldReceive('insert')
-            ->with('INSERT INTO `table` FORMAT Values (?, ?)', ['val', 'val'])
-            ->andReturn(true);
-
-        $connection->table('table')->insert(['val', 'val']);
-
-        $this->assertFalse($connection->table('table')->insert([]));
     }
 }

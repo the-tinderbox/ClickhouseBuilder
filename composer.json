@@ -1,6 +1,7 @@
 {
-  "name": "the-tinderbox/clickhouse-builder",
+  "name": "esazykin/clickhouse-builder",
   "description": "Clickhouse sql query builder",
+  "license": "MIT",
   "authors": [
     {
       "name": "FacedSID",

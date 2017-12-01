@@ -127,10 +127,20 @@ class Grammar
 
         $result[] = 'FORMAT '.($query->getFormat() ?? Format::VALUES);
 
-        $result[] = implode(', ', array_map(function ($value) {
-            return '('.implode(', ', array_map(function () {
+        // glue together all the values
+        $result[] = implode(', ', array_map(function (array $columns) {
+            $placeholders = array_map(function ($columnValue) {
+                // if inserted value is Array
+                if (is_array($columnValue)) {
+                    return sprintf(
+                        '[%s]',
+                        implode(', ', array_fill(0, count($columnValue), '?'))
+                    );
+                }
                 return '?';
-            }, $value)).')';
+            }, $columns);
+
+            return sprintf('(%s)', implode(', ', $placeholders));
         }, $values));
 
         return implode(' ', $result);
