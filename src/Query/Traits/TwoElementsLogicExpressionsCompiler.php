@@ -3,6 +3,7 @@
 namespace Tinderbox\ClickhouseBuilder\Query\Traits;
 
 use Tinderbox\ClickhouseBuilder\Query\Column;
+use Tinderbox\ClickhouseBuilder\Query\Enums\Operator;
 use Tinderbox\ClickhouseBuilder\Query\Tuple;
 use Tinderbox\ClickhouseBuilder\Query\TwoElementsLogicExpression;
 
@@ -31,13 +32,28 @@ trait TwoElementsLogicExpressionsCompiler
                 $result[] = $concat;
             }
 
-            $result[] = $this->compileElement($firstElement);
+            /*
+             * If not between is used, operator should be placed before first element
+             */
+            if ($operator == Operator::NOT_BETWEEN) {
+                $result[] = 'NOT (';
 
-            if (!is_null($operator)) {
-                $result[] = $operator;
+                $result[] = $this->compileElement($firstElement);
+
+                $result[] = Operator::BETWEEN;
+
+                $result[] = $this->compileElement($secondElement);
+
+                $result[] = ')';
+            } else {
+                $result[] = $this->compileElement($firstElement);
+
+                if (!is_null($operator)) {
+                    $result[] = $operator;
+                }
+
+                $result[] = $this->compileElement($secondElement);
             }
-
-            $result[] = $this->compileElement($secondElement);
         }
 
         return implode(' ', array_filter($result, function ($val) {
