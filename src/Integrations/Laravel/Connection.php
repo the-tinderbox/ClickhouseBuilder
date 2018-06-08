@@ -434,6 +434,25 @@ class Connection extends \Illuminate\Database\Connection
     }
 
     /**
+     * Run async insert queries from local CSV or TSV files.
+     *
+     * @param string $table
+     * @param array  $columns
+     * @param array  $files
+     * @param null   $format
+     *
+     * @return array
+     */
+    public function insertFilesAsOne($table, array $columns, array $files, $format = null)
+    {
+        $result = $this->getClient()->insertFilesAsOne($table, $columns, $files, $format);
+
+        $this->logQuery("INSERT FILES INTO {$table}", $files);
+
+        return $result;
+    }
+
+    /**
      * Run an update statement against the database.
      *
      * @param string $query
