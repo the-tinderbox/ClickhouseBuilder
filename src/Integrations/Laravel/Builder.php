@@ -12,7 +12,7 @@ class Builder extends BaseBuilder
     use Macroable {
         __call as macroCall;
     }
-    
+
     /**
      * Connection which is used to perform queries.
      *
@@ -40,7 +40,7 @@ class Builder extends BaseBuilder
      */
     public function get()
     {
-        if (!empty($this->async)) {
+        if (! empty($this->async)) {
             return $this->connection->selectAsync($this->toAsyncSqls());
         } else {
             return $this->connection->select($this->toSql(), [], $this->getFiles());
@@ -60,7 +60,7 @@ class Builder extends BaseBuilder
         $builder = $this->getCountQuery($column);
         $result = $builder->get();
 
-        if (!empty($this->groups)) {
+        if (! empty($this->groups)) {
             return count($result);
         } else {
             return $result[0]['count'] ?? 0;
@@ -103,7 +103,7 @@ class Builder extends BaseBuilder
      */
     public function insertFiles(array $columns, array $files, string $format = Format::CSV, int $concurrency = 5) : array
     {
-        return $this->connection->insertFiles((string) $this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
+        return $this->connection->insertFiles((string)$this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
     }
 
     /**
@@ -119,11 +119,9 @@ class Builder extends BaseBuilder
             return false;
         }
 
-        if (!is_array(reset($values))) {
+        if (! is_array(reset($values))) {
             $values = [$values];
-        }
-
-        /*
+        } /*
          * Here, we will sort the insert keys for every record so that each insert is
          * in the same order for the record. We need to make sure this is the case
          * so there are not any errors or problems when inserting these records.

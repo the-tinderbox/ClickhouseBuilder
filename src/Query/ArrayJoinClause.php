@@ -2,9 +2,6 @@
 
 namespace Tinderbox\ClickhouseBuilder\Query;
 
-use Tinderbox\ClickhouseBuilder\Query\Enums\JoinStrict;
-use Tinderbox\ClickhouseBuilder\Query\Enums\JoinType;
-
 class ArrayJoinClause
 {
     /**
@@ -13,7 +10,7 @@ class ArrayJoinClause
      * @var Expression|Identifier
      */
     private $arrayIdentifier;
-    
+
     /**
      * Builder which initiated join.
      *
@@ -38,7 +35,7 @@ class ArrayJoinClause
      *
      * @return ArrayJoinClause
      */
-    public function array($arrayIdentifier): self
+    public function array($arrayIdentifier) : self
     {
         if (is_string($arrayIdentifier)) {
             $arrayIdentifier = new Identifier($arrayIdentifier);
@@ -48,7 +45,7 @@ class ArrayJoinClause
 
         return $this;
     }
-    
+
     /**
      * Get array identifier to join.
      *

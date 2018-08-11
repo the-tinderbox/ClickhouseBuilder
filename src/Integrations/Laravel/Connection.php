@@ -142,7 +142,7 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Creates Clickhouse client.
      *
-     * @param mixed $server
+     * @param mixed              $server
      * @param TransportInterface $transport
      *
      * @return Client
@@ -202,7 +202,7 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @return Server
      */
-    protected function assembleServer(array $server): Server
+    protected function assembleServer(array $server) : Server
     {
         /* @var string $host */
         /* @var string $port */
@@ -218,11 +218,11 @@ class Connection extends \Illuminate\Database\Connection
 
             $options = new ServerOptions();
 
-            if (!is_null($timeout)) {
+            if (! is_null($timeout)) {
                 $options->setTimeout($timeout);
             }
 
-            if (!is_null($protocol)) {
+            if (! is_null($protocol)) {
                 $options->setProtocol($protocol);
             }
         }
@@ -305,7 +305,7 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @param string $query
      * @param array  $bindings
-     * @param array $tables
+     * @param array  $tables
      *
      * @return array
      */
@@ -329,7 +329,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         $queriesKeys = array_keys($queries);
         $results = array_combine($queriesKeys, $this->getClient()->selectAsync($queries));
-        
+
         foreach ($results as $i => $result) {
             /* @var \Tinderbox\Clickhouse\Query\Result $result */
             $query = $queries[$i][0];
@@ -358,11 +358,11 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Rollback the active database transaction.
      *
-     * @throws NotSupportedException
+     * @param null $toLevel
      *
-     * @return void
+     * @throws NotSupportedException
      */
-    public function rollBack()
+    public function rollBack($toLevel = null)
     {
         throw NotSupportedException::transactions();
     }

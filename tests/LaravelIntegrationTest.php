@@ -51,7 +51,7 @@ class LaravelIntegrationTest extends TestCase
                     'username' => 'default',
                     'password' => '',
                 ],
-                'server2' => [
+                'server2'  => [
                     'host'     => 'localhost',
                     'port'     => 8123,
                     'database' => 'database',
@@ -222,7 +222,7 @@ class LaravelIntegrationTest extends TestCase
                 'select * from `table1`',
                 'select * from `table2`',
             ])
-            ->andReturn([$result]);
+            ->andReturn([$result, $result]);
         $connection->setClient($client);
 
         $connection->selectAsync([
@@ -236,8 +236,8 @@ class LaravelIntegrationTest extends TestCase
         $connection = new Connection($this->getSimpleConfig());
         $client = m::mock(Client::class);
         $client->shouldReceive('insert')
-        ->with('insert into `table` (`column`, `column2`) values (`val`, `val`)', [])
-        ->andReturn(true);
+            ->with('insert into `table` (`column`, `column2`) values (`val`, `val`)', [])
+            ->andReturn(true);
         $connection->setClient($client);
 
         $result = $connection->insert('insert into `table` (`column`, `column2`) values (`val`, `val`)');
@@ -250,8 +250,8 @@ class LaravelIntegrationTest extends TestCase
         $connection = new Connection($this->getSimpleConfig());
         $client = m::mock(Client::class);
         $client->shouldReceive('insertFiles')
-        ->with('table', ['column1', 'column2'], ['file1', 'file2'], null, 5)
-        ->andReturn([]);
+            ->with('table', ['column1', 'column2'], ['file1', 'file2'], null, 5)
+            ->andReturn([]);
         $connection->setClient($client);
 
         $result = $connection->insertFiles('table', ['column1', 'column2'], ['file1', 'file2']);
@@ -349,8 +349,8 @@ class LaravelIntegrationTest extends TestCase
         $result->shouldReceive('getRows')->andReturn([]);
 
         $client->shouldReceive('selectAsync')->with([
-            ['SELECT * FROM `table`', [], []], ['SELECT * FROM `table2`', [], []]
-        ])->andReturn([$result]);
+            ['SELECT * FROM `table`', [], []], ['SELECT * FROM `table2`', [], []],
+        ])->andReturn([$result, $result]);
         $connection->setClient($client);
 
         $connection->table('table')->asyncWithQuery(function ($builder) {
