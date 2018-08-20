@@ -120,6 +120,10 @@ class Grammar
 
         $result[] = "INSERT INTO {$table}";
 
+        if (! is_null($query->getFrom()->getCluster())) {
+            $result[] = "ON CLUSTER {$query->getFrom()->getCluster()}";
+        }
+
         if ($columns !== '') {
             $result[] = "({$columns})";
         }
@@ -133,6 +137,35 @@ class Grammar
         }, $values));
 
         return implode(' ', $result);
+    }
+
+    /**
+     * Compile delete query.
+     *
+     * @param BaseBuilder $query
+     *
+     * @return string
+     * @throws GrammarException
+     */
+    public function compileDelete(BaseBuilder $query)
+    {
+        $this->verifyFrom($query->getFrom());
+
+        $sql = "ALTER TABLE {$this->wrap($query->getFrom()->getTable())}";
+
+        if (! is_null($query->getFrom()->getCluster())) {
+            $sql .= " ON CLUSTER {$query->getFrom()->getCluster()}";
+        }
+
+        $sql .= ' DELETE';
+
+        if (! is_null($query->getWheres()) && ! empty($query->getWheres())) {
+            $sql .= " {$this->compileWheresComponent($query, $query->getWheres())}";
+        } else {
+            throw GrammarException::missedWhereForDelete();
+        }
+
+        return $sql;
     }
 
     /**

@@ -119,4 +119,16 @@ class Builder extends BaseBuilder
             array_flatten($values)
         );
     }
+
+    /**
+     * Performs ALTER TABLE `table` DELETE query.
+     *
+     * @return bool
+     */
+    public function delete()
+    {
+        return $this->client->statement(
+            $this->grammar->compileDelete($this)
+        );
+    }
 }

@@ -413,6 +413,20 @@ abstract class BaseBuilder
     }
 
     /**
+     * Sets on cluster option for query.
+     *
+     * @param string $clusterName
+     *
+     * @return static
+     */
+    public function onCluster(string $clusterName)
+    {
+        $this->from->cluster($clusterName);
+
+        return $this;
+    }
+
+    /**
      * Add array join to query.
      *
      * @param string|Expression $arrayIdentifier

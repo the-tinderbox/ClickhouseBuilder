@@ -273,12 +273,12 @@ class LaravelIntegrationTest extends TestCase
         $connection->commit();
     }
 
-    public function test_connection_delete()
-    {
-        $connection = new Connection($this->getSimpleConfig());
-        $this->expectException(NotSupportedException::class);
-        $connection->delete('query');
-    }
+    //public function test_connection_delete()
+    //{
+    //    $connection = new Connection($this->getSimpleConfig());
+    //    $this->expectException(NotSupportedException::class);
+    //    $connection->delete('query');
+    //}
 
     public function test_connection_affecting_statement()
     {

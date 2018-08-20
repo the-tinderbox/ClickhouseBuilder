@@ -454,13 +454,11 @@ class Connection extends \Illuminate\Database\Connection
      * @param string $query
      * @param array  $bindings
      *
-     * @throws NotSupportedException
-     *
      * @return int
      */
     public function delete($query, $bindings = [])
     {
-        throw NotSupportedException::updateAndDelete();
+        return $this->statement($query);
     }
 
     /**

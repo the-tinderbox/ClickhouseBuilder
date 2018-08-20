@@ -23,12 +23,17 @@ trait FromComponentCompiler
         $table = $from->getTable();
         $alias = $from->getAlias();
         $final = $from->getFinal();
+        $cluster = $from->getCluster();
 
         $fromSection = '';
         $fromSection .= "FROM {$this->wrap($table)}";
 
         if (!is_null($alias)) {
             $fromSection .= " AS {$this->wrap($alias)}";
+        }
+
+        if (!is_null($cluster)) {
+            $fromSection .= " ON CLUSTER {$cluster}";
         }
 
         if (!is_null($final)) {
