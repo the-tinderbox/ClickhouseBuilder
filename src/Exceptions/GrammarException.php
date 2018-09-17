@@ -40,4 +40,9 @@ class GrammarException extends Exception
     {
         return new static('Missed table for insert statement.');
     }
+
+    public static function missedWhereForDelete()
+    {
+        return new static('Missed where section for delete statement.');
+    }
 }

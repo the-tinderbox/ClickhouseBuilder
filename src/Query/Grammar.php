@@ -2,15 +2,14 @@
 
 namespace Tinderbox\ClickhouseBuilder\Query;
 
-use function MongoDB\is_string_array;
 use Tinderbox\ClickhouseBuilder\Exceptions\GrammarException;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
+use Tinderbox\ClickhouseBuilder\Query\Traits\ArrayJoinComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\ColumnsComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\FormatComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\FromComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\GroupsComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\HavingsComponentCompiler;
-use Tinderbox\ClickhouseBuilder\Query\Traits\ArrayJoinComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\JoinComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\LimitByComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\LimitComponentCompiler;
@@ -74,15 +73,15 @@ class Grammar
         $sql = [];
 
         foreach ($this->selectComponents as $component) {
-            $compileMethod = 'compile'.ucfirst($component).'Component';
-            $component = 'get'.ucfirst($component);
+            $compileMethod = 'compile' . ucfirst($component) . 'Component';
+            $component = 'get' . ucfirst($component);
 
-            if (!is_null($query->$component()) && !empty($query->$component())) {
+            if (! is_null($query->$component()) && ! empty($query->$component())) {
                 $sql[$component] = $this->$compileMethod($query, $query->$component());
             }
         }
 
-        return trim('SELECT '.trim(implode(' ', $sql)));
+        return trim('SELECT ' . trim(implode(' ', $sql)));
     }
 
     /**
@@ -121,19 +120,52 @@ class Grammar
 
         $result[] = "INSERT INTO {$table}";
 
+        if (! is_null($query->getFrom()->getCluster())) {
+            $result[] = "ON CLUSTER {$query->getFrom()->getCluster()}";
+        }
+
         if ($columns !== '') {
             $result[] = "({$columns})";
         }
 
-        $result[] = 'FORMAT '.($query->getFormat() ?? Format::VALUES);
+        $result[] = 'FORMAT ' . ($query->getFormat() ?? Format::VALUES);
 
         $result[] = implode(', ', array_map(function ($value) {
-            return '('.implode(', ', array_map(function () {
-                return '?';
-            }, $value)).')';
+            return '(' . implode(', ', array_map(function () {
+                    return '?';
+                }, $value)) . ')';
         }, $values));
 
         return implode(' ', $result);
+    }
+
+    /**
+     * Compile delete query.
+     *
+     * @param BaseBuilder $query
+     *
+     * @return string
+     * @throws GrammarException
+     */
+    public function compileDelete(BaseBuilder $query)
+    {
+        $this->verifyFrom($query->getFrom());
+
+        $sql = "ALTER TABLE {$this->wrap($query->getFrom()->getTable())}";
+
+        if (! is_null($query->getFrom()->getCluster())) {
+            $sql .= " ON CLUSTER {$query->getFrom()->getCluster()}";
+        }
+
+        $sql .= ' DELETE';
+
+        if (! is_null($query->getWheres()) && ! empty($query->getWheres())) {
+            $sql .= " {$this->compileWheresComponent($query, $query->getWheres())}";
+        } else {
+            throw GrammarException::missedWhereForDelete();
+        }
+
+        return $sql;
     }
 
     /**
@@ -152,7 +184,7 @@ class Grammar
         } elseif (is_string($value)) {
             return "'{$value}'";
         } elseif ($value instanceof Identifier) {
-            $value = (string) $value;
+            $value = (string)$value;
 
             if (strpos(strtolower($value), '.') !== false) {
                 return implode('.', array_map(function ($element) {
@@ -175,7 +207,7 @@ class Grammar
                 return $value;
             }
 
-            return '`'.str_replace('`', '``', $value).'`';
+            return '`' . str_replace('`', '``', $value) . '`';
         } elseif (is_numeric($value)) {
             return $value;
         } else {

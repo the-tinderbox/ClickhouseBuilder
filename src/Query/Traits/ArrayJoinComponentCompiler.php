@@ -10,7 +10,7 @@ trait ArrayJoinComponentCompiler
     /**
      * Compiles join to string to pass this string in query.
      *
-     * @param Builder    $query
+     * @param Builder         $query
      * @param ArrayJoinClause $join
      *
      * @return string
@@ -20,7 +20,7 @@ trait ArrayJoinComponentCompiler
         $result = [];
         $result[] = 'ARRAY JOIN';
         $result[] = $this->wrap($join->getArrayIdentifier());
-        
+
         return implode(' ', $result);
     }
 }

@@ -324,4 +324,15 @@ class GrammarTest extends TestCase
 
         $grammar->compileSelect($builder);
     }
+
+    public function testCompileDelete()
+    {
+        $grammar = new Grammar();
+        $builder = $this->getBuilder();
+        $builder->from('table')->where('column', 1);
+
+        $sql = $grammar->compileDelete($builder);
+
+        $this->assertEquals('ALTER TABLE `table` DELETE WHERE `column` = 1', $sql);
+    }
 }

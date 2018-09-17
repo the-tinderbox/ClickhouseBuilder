@@ -33,7 +33,7 @@ class Builder extends BaseBuilder
      */
     public function get()
     {
-        if (!empty($this->async)) {
+        if (! empty($this->async)) {
             return $this->client->selectAsync($this->toAsyncSqls());
         } else {
             return $this->client->select($this->toSql(), [], $this->getFiles());
@@ -53,7 +53,7 @@ class Builder extends BaseBuilder
         $builder = $this->getCountQuery($column);
         $result = $builder->get();
 
-        if (!empty($this->groups)) {
+        if (! empty($this->groups)) {
             return count($result);
         } else {
             return $result[0]['count'] ?? 0;
@@ -65,7 +65,7 @@ class Builder extends BaseBuilder
      *
      * @return self
      */
-    public function newQuery() : Builder
+    public function newQuery() : self
     {
         return new static($this->client);
     }
@@ -116,11 +116,9 @@ class Builder extends BaseBuilder
             return false;
         }
 
-        if (!is_array(reset($values))) {
+        if (! is_array(reset($values))) {
             $values = [$values];
-        }
-
-        /*
+        } /*
          * Here, we will sort the insert keys for every record so that each insert is
          * in the same order for the record. We need to make sure this is the case
          * so there are not any errors or problems when inserting these records.
@@ -135,6 +133,18 @@ class Builder extends BaseBuilder
         return $this->client->insert(
             $this->grammar->compileInsert($this, $values),
             array_flatten($values)
+        );
+    }
+
+    /**
+     * Performs ALTER TABLE `table` DELETE query.
+     *
+     * @return bool
+     */
+    public function delete()
+    {
+        return $this->client->statement(
+            $this->grammar->compileDelete($this)
         );
     }
 }

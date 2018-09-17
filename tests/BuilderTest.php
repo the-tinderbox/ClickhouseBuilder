@@ -426,10 +426,10 @@ class BuilderTest extends TestCase
 
         $builder = $builder->newQuery()->select('column')->from('table')->preWhereIn('column', ['string', 1, 2, 3]);
         $this->assertEquals('SELECT `column` FROM `table` PREWHERE `column` IN (\'string\', 1, 2, 3)', $builder->toSql());
-    
+
         $builder = $builder->newQuery();
         $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->preWhereIn('column', '_numbers');
-        
+
         $this->assertEquals('SELECT `column` FROM `table` PREWHERE `column` IN `_numbers`', $builder->toSql());
 
         $builder = $builder->newQuery()->from('table')->preWhereIn(function ($query) {
@@ -487,30 +487,24 @@ class BuilderTest extends TestCase
         $builder = $this->getBuilder();
 
         $builder = $builder->newQuery()->select('column')->from('table')->preWhereNotBetween('column', ['first', 'second']);
-        $this->assertEquals('SELECT `column` FROM `table` PREWHERE `column` NOT BETWEEN \'first\' AND \'second\'', $builder->toSql());
+        $this->assertEquals('SELECT `column` FROM `table` PREWHERE NOT ( `column` BETWEEN \'first\' AND \'second\' )', $builder->toSql());
 
         $builder = $builder->newQuery()->select('column')->from('table')->preWhereNotBetween(function ($query) {
             $query->from('table');
         }, ['first', 'second']);
-        $this->assertEquals('SELECT `column` FROM `table` PREWHERE (SELECT * FROM `table`) NOT BETWEEN \'first\' AND \'second\'', $builder->toSql());
+        $this->assertEquals('SELECT `column` FROM `table` PREWHERE NOT ( (SELECT * FROM `table`) BETWEEN \'first\' AND \'second\' )', $builder->toSql());
 
         $builder = $builder->newQuery()
             ->select('column')
             ->from('table')
             ->preWhereBetween('column', ['first', 'second'])->orPreWhereNotBetween('column2', ['first', 'second']);
-        $this->assertEquals('SELECT `column` FROM `table` PREWHERE `column` BETWEEN \'first\' AND \'second\' OR `column2` NOT BETWEEN \'first\' AND \'second\'', $builder->toSql());
-
-        $builder = $builder->newQuery()->select('column')->from('table')->preWhereBetweenColumns('column', ['first', 'second']);
-        $this->assertEquals('SELECT `column` FROM `table` PREWHERE `column` BETWEEN `first` AND `second`', $builder->toSql());
-
-        $builder = $builder->newQuery()->select('column')->from('table')->prewhere('col', '=', 'a')->orPreWhereBetweenColumns('column', ['first', 'second']);
-        $this->assertEquals('SELECT `column` FROM `table` PREWHERE `col` = \'a\' OR `column` BETWEEN `first` AND `second`', $builder->toSql());
+        $this->assertEquals('SELECT `column` FROM `table` PREWHERE `column` BETWEEN \'first\' AND \'second\' OR NOT ( `column2` BETWEEN \'first\' AND \'second\' )', $builder->toSql());
 
         $builder = $builder->newQuery()->select('column')->from('table')->preWhereNotBetweenColumns('column', ['first', 'second']);
-        $this->assertEquals('SELECT `column` FROM `table` PREWHERE `column` NOT BETWEEN `first` AND `second`', $builder->toSql());
+        $this->assertEquals('SELECT `column` FROM `table` PREWHERE NOT ( `column` BETWEEN `first` AND `second` )', $builder->toSql());
 
         $builder = $builder->newQuery()->select('column')->from('table')->prewhere('col', '=', 'a')->orPreWhereNotBetweenColumns('column', ['first', 'second']);
-        $this->assertEquals('SELECT `column` FROM `table` PREWHERE `col` = \'a\' OR `column` NOT BETWEEN `first` AND `second`', $builder->toSql());
+        $this->assertEquals('SELECT `column` FROM `table` PREWHERE `col` = \'a\' OR NOT ( `column` BETWEEN `first` AND `second` )', $builder->toSql());
     }
 
     public function test_wheres_basic()
@@ -551,7 +545,7 @@ class BuilderTest extends TestCase
         $element->firstElement('a');
         $element->operator('=');
         $element->secondElement('b');
-        $element->concatOperator(Operator::OR);
+        $element->concatOperator(Operator:: OR);
 
         $builder->where($element);
         $this->assertEquals('SELECT * WHERE \'a\' = \'b\'', $builder->toSql());
@@ -561,13 +555,13 @@ class BuilderTest extends TestCase
         $element->firstElement('a');
         $element->operator('=');
         $element->secondElement('b');
-        $element->concatOperator(Operator::OR);
+        $element->concatOperator(Operator:: OR);
 
         $element2 = new TwoElementsLogicExpression($builder);
         $element2->firstElement('c');
         $element2->operator('=');
         $element2->secondElement('d');
-        $element2->concatOperator(Operator::OR);
+        $element2->concatOperator(Operator:: OR);
 
         $builder->where($element, '=', $element2);
         $this->assertEquals('SELECT * WHERE \'a\' = \'b\' = \'c\' = \'d\'', $builder->toSql());
@@ -606,15 +600,15 @@ class BuilderTest extends TestCase
 
         $builder = $this->getBuilder()->from('table')->whereGlobalNotIn('column', [1, 2, 3])->orWhereGlobalNotIn('column2', [1, 2, 3]);
         $this->assertEquals('SELECT * FROM `table` WHERE `column` GLOBAL NOT IN (1, 2, 3) OR `column2` GLOBAL NOT IN (1, 2, 3)', $builder->toSql());
-    
+
         $builder = $builder->newQuery();
         $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->whereIn('column', '_numbers');
-    
+
         $this->assertEquals('SELECT `column` FROM `table` WHERE `column` IN `_numbers`', $builder->toSql());
-    
+
         $builder = $builder->newQuery();
         $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->whereGlobalIn('column', '_numbers');
-    
+
         $this->assertEquals('SELECT `column` FROM `table` WHERE `column` GLOBAL IN `_numbers`', $builder->toSql());
     }
 
@@ -629,10 +623,10 @@ class BuilderTest extends TestCase
         $this->assertEquals('SELECT * FROM `table` WHERE (SELECT * FROM `table`) BETWEEN 1 AND 2', $builder->toSql());
 
         $builder = $this->getBuilder()->from('table')->whereNotBetween('column', [1, 'string']);
-        $this->assertEquals('SELECT * FROM `table` WHERE `column` NOT BETWEEN 1 AND \'string\'', $builder->toSql());
+        $this->assertEquals('SELECT * FROM `table` WHERE NOT ( `column` BETWEEN 1 AND \'string\' )', $builder->toSql());
 
         $builder = $this->getBuilder()->from('table')->where('col', '=', 'a')->orWhereNotBetween('column', [1, 'string']);
-        $this->assertEquals('SELECT * FROM `table` WHERE `col` = \'a\' OR `column` NOT BETWEEN 1 AND \'string\'', $builder->toSql());
+        $this->assertEquals('SELECT * FROM `table` WHERE `col` = \'a\' OR NOT ( `column` BETWEEN 1 AND \'string\' )', $builder->toSql());
 
         $builder = $this->getBuilder()->from('table')->where('column', 1)->orWhereBetween('column2', [1, 2]);
         $this->assertEquals('SELECT * FROM `table` WHERE `column` = 1 OR `column2` BETWEEN 1 AND 2', $builder->toSql());
@@ -702,10 +696,10 @@ class BuilderTest extends TestCase
         $this->assertEquals('SELECT * FROM `table` GROUP BY `column` HAVING `column` BETWEEN 1 AND 2 OR `column2` BETWEEN 3 AND 4', $builder->toSql());
 
         $builder = $this->getBuilder()->from('table')->groupBy('column')->havingNotBetween('column', [1, 2]);
-        $this->assertEquals('SELECT * FROM `table` GROUP BY `column` HAVING `column` NOT BETWEEN 1 AND 2', $builder->toSql());
+        $this->assertEquals('SELECT * FROM `table` GROUP BY `column` HAVING NOT ( `column` BETWEEN 1 AND 2 )', $builder->toSql());
 
         $builder = $this->getBuilder()->from('table')->groupBy('column')->havingBetween('column', [1, 2])->orHavingNotBetween('column2', [3, 4]);
-        $this->assertEquals('SELECT * FROM `table` GROUP BY `column` HAVING `column` BETWEEN 1 AND 2 OR `column2` NOT BETWEEN 3 AND 4', $builder->toSql());
+        $this->assertEquals('SELECT * FROM `table` GROUP BY `column` HAVING `column` BETWEEN 1 AND 2 OR NOT ( `column2` BETWEEN 3 AND 4 )', $builder->toSql());
 
         $builder = $builder->newQuery()->select('column')->from('table')->havingBetweenColumns('column', ['first', 'second']);
         $this->assertEquals('SELECT `column` FROM `table` HAVING `column` BETWEEN `first` AND `second`', $builder->toSql());
@@ -723,10 +717,10 @@ class BuilderTest extends TestCase
 
         $builder = $this->getBuilder()->from('table')->groupBy('column')->havingIn('column', [1, 2, 3]);
         $this->assertEquals('SELECT * FROM `table` GROUP BY `column` HAVING `column` IN (1, 2, 3)', $builder->toSql());
-    
+
         $builder = $builder->newQuery();
         $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->havingIn('column', '_numbers');
-    
+
         $this->assertEquals('SELECT `column` FROM `table` HAVING `column` IN `_numbers`', $builder->toSql());
 
         $builder = $this->getBuilder()->from('table')->groupBy('column')->havingNotIn('column', [1, 2, 3]);
@@ -884,54 +878,54 @@ class BuilderTest extends TestCase
 
         $builder->table('table')->insertFiles(['column1', 'column2'], ['file1', 'file2']);
     }
-    
+
     public function testCompileAsyncQueries()
     {
         $builder = $this->getBuilder();
         $builder2 = null;
         $builder3 = null;
-        
-        $builder->from('table1')->asyncWithQuery(function ($builder) use(&$builder2, &$builder3) {
+
+        $builder->from('table1')->asyncWithQuery(function ($builder) use (&$builder2, &$builder3) {
             $builder2 = $builder;
-            
-            $builder->from('table2')->asyncWithQuery(function ($builder) use(&$builder3) {
+
+            $builder->from('table2')->asyncWithQuery(function ($builder) use (&$builder3) {
                 $builder3 = $builder;
-                
+
                 $builder->from('table3');
             });
         });
-        
+
         $sqls = $builder->getAsyncQueries();
-        
+
         $this->assertEquals([
             $builder,
             $builder2,
             $builder3,
         ], $sqls);
     }
-    
+
     public function testAddFile()
     {
         $builder = $this->getBuilder();
         $builder->addFile('test.csv', '_data', ['UInt64']);
-        
+
         $files = $builder->getFiles();
-        
+
         $this->assertEquals(1, count($files));
         $this->assertArrayHasKey('_data', $files);
-        
+
         /* @var \Tinderbox\Clickhouse\Common\TempTable $table */
         $table = $files['_data'];
-        
+
         $this->assertEquals('_data', $table->getName());
         $this->assertEquals('test.csv', $table->getSource());
         $this->assertEquals(['UInt64'], $table->getStructure());
         $this->assertEquals(Format::CSV, $table->getFormat());
-        
+
         $e = BuilderException::temporaryTableAlreadyExists('_data');
         $this->expectException(BuilderException::class);
         $this->expectExceptionMessage($e->getMessage());
-    
+
         $builder->addFile('test.csv', '_data', ['UInt64']);
     }
 }
