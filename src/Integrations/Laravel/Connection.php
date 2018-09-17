@@ -142,7 +142,7 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Creates Clickhouse client.
      *
-     * @param mixed $server
+     * @param mixed              $server
      * @param TransportInterface $transport
      *
      * @return Client
@@ -168,7 +168,11 @@ class Connection extends \Illuminate\Database\Connection
                 break;
 
             case 'cli':
-                return new ClickhouseCLIClientTransport($options['executable'] ?? null);
+                return new ClickhouseCLIClientTransport(
+                    $options['executable'] ?? null,
+                    $options['catExecutable'] ?? null,
+                    $options['useCcat'] ?? false
+                );
                 break;
         }
     }
@@ -202,7 +206,7 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @return Server
      */
-    protected function assembleServer(array $server): Server
+    protected function assembleServer(array $server) : Server
     {
         /* @var string $host */
         /* @var string $port */
@@ -218,11 +222,11 @@ class Connection extends \Illuminate\Database\Connection
 
             $options = new ServerOptions();
 
-            if (!is_null($timeout)) {
+            if (! is_null($timeout)) {
                 $options->setTimeout($timeout);
             }
 
-            if (!is_null($protocol)) {
+            if (! is_null($protocol)) {
                 $options->setProtocol($protocol);
             }
         }
@@ -305,7 +309,7 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @param string $query
      * @param array  $bindings
-     * @param array $tables
+     * @param array  $tables
      *
      * @return array
      */
@@ -329,7 +333,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         $queriesKeys = array_keys($queries);
         $results = array_combine($queriesKeys, $this->getClient()->selectAsync($queries));
-        
+
         foreach ($results as $i => $result) {
             /* @var \Tinderbox\Clickhouse\Query\Result $result */
             $query = $queries[$i][0];
@@ -358,11 +362,11 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Rollback the active database transaction.
      *
-     * @throws NotSupportedException
+     * @param null $toLevel
      *
-     * @return void
+     * @throws NotSupportedException
      */
-    public function rollBack()
+    public function rollBack($toLevel = null)
     {
         throw NotSupportedException::transactions();
     }
@@ -434,25 +438,6 @@ class Connection extends \Illuminate\Database\Connection
     }
 
     /**
-     * Run async insert queries from local CSV or TSV files.
-     *
-     * @param string $table
-     * @param array  $columns
-     * @param array  $files
-     * @param null   $format
-     *
-     * @return array
-     */
-    public function insertFilesAsOne($table, array $columns, array $files, $format = null)
-    {
-        $result = $this->getClient()->insertFilesAsOne($table, $columns, $files, $format);
-
-        $this->logQuery("INSERT FILES INTO {$table}", $files);
-
-        return $result;
-    }
-
-    /**
      * Run an update statement against the database.
      *
      * @param string $query
@@ -473,13 +458,11 @@ class Connection extends \Illuminate\Database\Connection
      * @param string $query
      * @param array  $bindings
      *
-     * @throws NotSupportedException
-     *
      * @return int
      */
     public function delete($query, $bindings = [])
     {
-        throw NotSupportedException::updateAndDelete();
+        return $this->statement($query);
     }
 
     /**
