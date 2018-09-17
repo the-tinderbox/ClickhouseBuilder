@@ -88,6 +88,22 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * Insert in table data from files.
+     *
+     * @param array  $columns
+     * @param array  $files
+     * @param string $format
+     *
+     * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
+     *
+     * @return array
+     */
+    public function insertFilesAsOne(array $columns, array $files, string $format = \Tinderbox\Clickhouse\Common\Format::CSV) : array
+    {
+        return $this->client->insertFilesAsOne((string) $this->getFrom()->getTable(), $columns, $files, $format);
+    }
+
+    /**
      * Performs insert query.
      *
      * @param array $values

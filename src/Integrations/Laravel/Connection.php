@@ -168,7 +168,11 @@ class Connection extends \Illuminate\Database\Connection
                 break;
 
             case 'cli':
-                return new ClickhouseCLIClientTransport($options['executable'] ?? null);
+                return new ClickhouseCLIClientTransport(
+                    $options['executable'] ?? null,
+                    $options['catExecutable'] ?? null,
+                    $options['useCcat'] ?? false
+                );
                 break;
         }
     }
