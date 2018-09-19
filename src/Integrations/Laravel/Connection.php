@@ -171,6 +171,7 @@ class Connection extends \Illuminate\Database\Connection
                 return new ClickhouseCLIClientTransport(
                     $options['executable'] ?? null,
                     $options['catExecutable'] ?? null,
+                    $options['ccatExecutable'] ?? null,
                     $options['useCcat'] ?? false
                 );
                 break;
