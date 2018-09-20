@@ -380,7 +380,7 @@ class Connection extends \Illuminate\Database\Connection
             $this->logQuery($query, $bindings, $result->getStatistic()->getTime());
 
             $results[$i] = $result->getRows();
-            $statistic[$i] = $result->$result->getStatistic();
+            $statistic[$i] = $result->getStatistic();
         }
 
         $this->setLastQueryStatistic($statistic);
