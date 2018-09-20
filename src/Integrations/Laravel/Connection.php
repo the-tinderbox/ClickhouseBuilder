@@ -9,8 +9,10 @@ use Tinderbox\Clickhouse\Interfaces\TransportInterface;
 use Tinderbox\Clickhouse\Server;
 use Tinderbox\Clickhouse\Transport\ClickhouseCLIClientTransport;
 use Tinderbox\Clickhouse\Transport\HttpTransport;
+use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Exceptions\NotSupportedException;
 use Tinderbox\ClickhouseBuilder\Query\Expression;
+use Tinderbox\Clickhouse\Query\QueryStatistic;
 
 class Connection extends \Illuminate\Database\Connection
 {
@@ -55,6 +57,13 @@ class Connection extends \Illuminate\Database\Connection
      * @var bool
      */
     protected $pretending = false;
+
+    /**
+     * Last executed query statistic
+     *
+     * @var \Tinderbox\Clickhouse\Query\QueryStatisitc
+     */
+    protected $lastQueryStatistic;
 
     /**
      * Create a new database connection instance.
@@ -137,6 +146,31 @@ class Connection extends \Illuminate\Database\Connection
         }
 
         return $this->config[$option] ?? null;
+    }
+
+    /**
+     * Returns statistic for last query
+     *
+     * @return array|\Tinderbox\Clickhouse\Query\QueryStatistic
+     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\BuilderException
+     */
+    public function getLastQueryStatistic()
+    {
+        if (is_null($this->lastQueryStatistic)) {
+            throw new BuilderException('Run query before trying to get statistic');
+        }
+
+        return $this->lastQueryStatistic;
+    }
+
+    /**
+     * Sets last query statistic
+     *
+     * @param array|\Tinderbox\Clickhouse\Query\QueryStatistic $queryStatistic
+     */
+    protected function setLastQueryStatistic($queryStatistic)
+    {
+        $this->lastQueryStatistic = $queryStatistic;
     }
 
     /**
@@ -320,6 +354,8 @@ class Connection extends \Illuminate\Database\Connection
 
         $this->logQuery($query, $bindings, $result->getStatistic()->getTime());
 
+        $this->setLastQueryStatistic($result->getStatistic());
+
         return $result->getRows();
     }
 
@@ -334,6 +370,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         $queriesKeys = array_keys($queries);
         $results = array_combine($queriesKeys, $this->getClient()->selectAsync($queries));
+        $statistic = [];
 
         foreach ($results as $i => $result) {
             /* @var \Tinderbox\Clickhouse\Query\Result $result */
@@ -343,7 +380,10 @@ class Connection extends \Illuminate\Database\Connection
             $this->logQuery($query, $bindings, $result->getStatistic()->getTime());
 
             $results[$i] = $result->getRows();
+            $statistic[$i] = $result->$result->getStatistic();
         }
+
+        $this->setLastQueryStatistic($statistic);
 
         return $results;
     }
