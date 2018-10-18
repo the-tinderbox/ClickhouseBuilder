@@ -803,14 +803,14 @@ class BuilderTest extends TestCase
     public function test_get_and_async_get()
     {
         $client = m::mock(Client::class);
-        $client->shouldReceive('select')->with('SELECT * FROM `table`', [], []);
+        $client->shouldReceive('readOne')->with('SELECT * FROM `table`', [], []);
         $builder = new Builder($client);
         $builder->from('table')->get();
 
         $client = m::mock(Client::class);
-        $client->shouldReceive('selectAsync')->with([
-            ['SELECT * FROM `table1`', [], []], ['SELECT * FROM `table2`', [], []],
-        ]);
+        $client->shouldReceive('read')->with([
+            ['query' => 'SELECT * FROM `table1`'], ['query' => 'SELECT * FROM `table2`'],
+        ], 5);
         $builder = new Builder($client);
 
         $builder->from('table1')->asyncWithQuery(function ($builder) {

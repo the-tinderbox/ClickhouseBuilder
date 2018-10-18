@@ -4,6 +4,7 @@ namespace Tinderbox\ClickhouseBuilder\Query;
 
 use Closure;
 use Tinderbox\Clickhouse\Common\TempTable;
+use Tinderbox\Clickhouse\Interfaces\FileInterface;
 use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinStrict;
@@ -19,119 +20,119 @@ abstract class BaseBuilder
      * @var Column[]
      */
     protected $columns = [];
-
+    
     /**
      * Table to select from.
      *
      * @var From|null
      */
     protected $from = null;
-
+    
     /**
      * Sample expression.
      *
      * @var float|null
      */
     protected $sample;
-
+    
     /**
      * Join clause.
      *
      * @var JoinClause
      */
     protected $join;
-
+    
     /**
      * Array join clause.
      *
      * @var ArrayJoinClause
      */
     protected $arrayJoin;
-
+    
     /**
      * Prewhere statements.
      *
      * @var TwoElementsLogicExpression[]
      */
     protected $prewheres = [];
-
+    
     /**
      * Where statements.
      *
      * @var TwoElementsLogicExpression[]
      */
     protected $wheres = [];
-
+    
     /**
      * Groupings.
      *
      * @var array
      */
     protected $groups = [];
-
+    
     /**
      * Having statements.
      *
      * @var TwoElementsLogicExpression[]
      */
     protected $havings = [];
-
+    
     /**
      * Order statements.
      *
      * @var array
      */
     protected $orders = [];
-
+    
     /**
      * Limit.
      *
      * @var Limit|null
      */
     protected $limit;
-
+    
     /**
      * Limit n by statement.
      *
      * @var Limit|null
      */
     protected $limitBy;
-
+    
     /**
      * Queries to union.
      *
      * @var array
      */
     protected $unions = [];
-
+    
     /**
      * Query format.
      *
      * @var Format|null
      */
     protected $format;
-
+    
     /**
      * Grammar to build query parts.
      *
      * @var Grammar
      */
     protected $grammar;
-
+    
     /**
      * Queries which must be run asynchronous.
      *
      * @var array
      */
     protected $async = [];
-
+    
     /**
      * Files which should be sent on server to store into temporary table
      *
      * @var array
      */
     protected $files = [];
-
+    
     /**
      * Set columns for select statement.
      *
@@ -142,16 +143,16 @@ abstract class BaseBuilder
     public function select(...$columns)
     {
         $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
-
+        
         if (empty($columns)) {
             $columns[] = '*';
         }
-
+        
         $this->columns = $this->processColumns($columns);
-
+        
         return $this;
     }
-
+    
     /**
      * Returns query for count total rows without limit
      *
@@ -162,16 +163,16 @@ abstract class BaseBuilder
     public function getCountQuery($column = '*')
     {
         $without = ['columns' => [], 'limit' => null];
-
+        
         if (empty($this->groups)) {
             $without['orders'] = [];
         }
-
-        $builder = $this->cloneWithout($without)->select(raw('count(' . $column . ') as `count`'));
-
+        
+        $builder = $this->cloneWithout($without)->select(raw('count('.$column.') as `count`'));
+        
         return $builder;
     }
-
+    
     /**
      * Clone the query without the given properties.
      *
@@ -181,13 +182,16 @@ abstract class BaseBuilder
      */
     public function cloneWithout(array $except)
     {
-        return tap(clone $this, function ($clone) use ($except) {
-            foreach ($except as $property => $value) {
-                $clone->{$property} = $value;
+        return tap(
+            clone $this,
+            function ($clone) use ($except) {
+                foreach ($except as $property => $value) {
+                    $clone->{$property} = $value;
+                }
             }
-        });
+        );
     }
-
+    
     /**
      * Add columns to exist select statement.
      *
@@ -198,16 +202,16 @@ abstract class BaseBuilder
     public function addSelect(...$columns)
     {
         $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
-
+        
         if (empty($columns)) {
             $columns[] = '*';
         }
-
+        
         $this->columns = array_merge($this->columns, $this->processColumns($columns));
-
+        
         return $this;
     }
-
+    
     /**
      * Prepares columns given by user to Column objects.
      *
@@ -216,56 +220,56 @@ abstract class BaseBuilder
      *
      * @return array
      */
-    protected function processColumns(array $columns, bool $withAliases = true) : array
+    protected function processColumns(array $columns, bool $withAliases = true): array
     {
         $result = [];
-
+        
         foreach ($columns as $column => $value) {
             if ($value instanceof Closure) {
                 $columnName = $column;
                 $column = (new Column($this));
-
-                if (! is_int($columnName)) {
+                
+                if (!is_int($columnName)) {
                     $column->name($columnName);
                 }
-
+                
                 $column = tap($column, $value);
-
+                
                 if ($column->getSubQuery()) {
                     $column->query($column->getSubQuery());
                 }
             }
-
+            
             if ($value instanceof BaseBuilder) {
                 $alias = is_string($column) ? $column : null;
                 $column = (new Column($this))->query($value);
-
-                if (! is_null($alias) && $withAliases) {
+                
+                if (!is_null($alias) && $withAliases) {
                     $column->as($alias);
                 }
             }
-
+            
             if (is_int($column)) {
                 $column = $value;
                 $value = null;
             }
-
-            if (! $column instanceof Column) {
+            
+            if (!$column instanceof Column) {
                 $alias = is_string($value) ? $value : null;
-
+                
                 $column = (new Column($this))->name($column);
-
-                if (! is_null($alias) && $withAliases) {
+                
+                if (!is_null($alias) && $withAliases) {
                     $column->as($alias);
                 }
             }
-
+            
             $result[] = $column;
         }
-
+        
         return $result;
     }
-
+    
     /**
      * Sets table to from statement.
      *
@@ -278,16 +282,16 @@ abstract class BaseBuilder
     public function from($table, string $alias = null, bool $isFinal = null)
     {
         $this->from = new From($this);
-
+        
         /*
          * If builder instance given, then we assume that from section should contain sub-query
          */
         if ($table instanceof BaseBuilder) {
             $this->from->query($table);
-
+            
             $this->files = array_merge($this->files, $table->getFiles());
         }
-
+        
         /*
          * If closure given, then we call it and pass From object as argument to
          * set up From object in callback
@@ -295,33 +299,33 @@ abstract class BaseBuilder
         if ($table instanceof Closure) {
             $table($this->from);
         }
-
+        
         /*
          * If given anything that is not builder instance or callback. For example, string,
          * then we assume that table name was given.
          */
-        if (! $table instanceof Closure && ! $table instanceof BaseBuilder) {
+        if (!$table instanceof Closure && !$table instanceof BaseBuilder) {
             $this->from->table($table);
         }
-
-        if (! is_null($alias)) {
+        
+        if (!is_null($alias)) {
             $this->from->as($alias);
         }
-
-        if (! is_null($isFinal)) {
+        
+        if (!is_null($isFinal)) {
             $this->from->final($isFinal);
         }
-
+        
         /*
          * If subQuery method was executed on From object, then we take subQuery and "execute" it
          */
-        if (! is_null($this->from->getSubQuery())) {
+        if (!is_null($this->from->getSubQuery())) {
             $this->from->query($this->from->getSubQuery());
         }
-
+        
         return $this;
     }
-
+    
     /**
      * Alias for from method.
      *
@@ -335,7 +339,7 @@ abstract class BaseBuilder
     {
         return $this->from($table, $alias, $isFinal);
     }
-
+    
     /**
      * Set sample expression.
      *
@@ -346,10 +350,10 @@ abstract class BaseBuilder
     public function sample(float $coefficient)
     {
         $this->sample = $coefficient;
-
+        
         return $this;
     }
-
+    
     /**
      * Add queries to union with.
      *
@@ -362,16 +366,16 @@ abstract class BaseBuilder
         if ($query instanceof Closure) {
             $query = tap($this->newQuery(), $query);
         }
-
+        
         if ($query instanceof BaseBuilder) {
             $this->unions[] = $query;
         } else {
             throw new \InvalidArgumentException('Argument for unionAll must be closure or builder instance.');
         }
-
+        
         return $this;
     }
-
+    
     /**
      * Set alias for table in from statement.
      *
@@ -379,13 +383,13 @@ abstract class BaseBuilder
      *
      * @return static
      */
-    public function as (string $alias)
+    public function as(string $alias)
     {
         $this->from->as($alias);
-
+        
         return $this;
     }
-
+    
     /**
      * As method alias.
      *
@@ -397,7 +401,7 @@ abstract class BaseBuilder
     {
         return $this->as($alias);
     }
-
+    
     /**
      * Sets final option on from statement.
      *
@@ -408,10 +412,10 @@ abstract class BaseBuilder
     public function final(bool $final = true)
     {
         $this->from->final($final);
-
+        
         return $this;
     }
-
+    
     /**
      * Sets on cluster option for query.
      *
@@ -422,10 +426,10 @@ abstract class BaseBuilder
     public function onCluster(string $clusterName)
     {
         $this->from->cluster($clusterName);
-
+        
         return $this;
     }
-
+    
     /**
      * Add array join to query.
      *
@@ -437,10 +441,10 @@ abstract class BaseBuilder
     {
         $this->arrayJoin = new ArrayJoinClause($this);
         $this->arrayJoin->array($arrayIdentifier);
-
+        
         return $this;
     }
-
+    
     /**
      * Add join to query.
      *
@@ -458,19 +462,18 @@ abstract class BaseBuilder
         string $type = null,
         array $using = null,
         bool $global = false
-    )
-    {
+    ) {
         $this->join = new JoinClause($this);
-
+        
         /*
          * If builder instance given, then we assume that sub-query should be used as table in join
          */
         if ($table instanceof BaseBuilder) {
             $this->join->query($table);
-
+            
             $this->files = array_merge($this->files, $table->getFiles());
         }
-
+        
         /*
          * If closure given, then we call it and pass From object as argument to
          * set up JoinClause object in callback
@@ -478,39 +481,39 @@ abstract class BaseBuilder
         if ($table instanceof Closure) {
             $table($this->join);
         }
-
+        
         /*
          * If given anything that is not builder instance or callback. For example, string,
          * then we assume that table name was given.
          */
-        if (! $table instanceof Closure && ! $table instanceof BaseBuilder) {
+        if (!$table instanceof Closure && !$table instanceof BaseBuilder) {
             $this->join->table($table);
         }
-
+        
         /*
          * If using was given, then merge it with using given before, in closure
          */
-        if (! is_null($using)) {
+        if (!is_null($using)) {
             $this->join->addUsing($using);
         }
-
-        if (! is_null($strict) && is_null($this->join->getStrict())) {
+        
+        if (!is_null($strict) && is_null($this->join->getStrict())) {
             $this->join->strict($strict);
         }
-
-        if (! is_null($type) && is_null($this->join->getType())) {
+        
+        if (!is_null($type) && is_null($this->join->getType())) {
             $this->join->type($type);
         }
-
+        
         $this->join->distributed($global);
-
-        if (! is_null($this->join->getSubQuery())) {
+        
+        if (!is_null($this->join->getSubQuery())) {
             $this->join->query($this->join->getSubQuery());
         }
-
+        
         return $this;
     }
-
+    
     /**
      * Left join.
      *
@@ -527,7 +530,7 @@ abstract class BaseBuilder
     {
         return $this->join($table, $strict ?? JoinStrict::ALL, JoinType::LEFT, $using, $global);
     }
-
+    
     /**
      * Inner join.
      *
@@ -544,7 +547,7 @@ abstract class BaseBuilder
     {
         return $this->join($table, $strict ?? JoinStrict::ALL, JoinType::INNER, $using, $global);
     }
-
+    
     /**
      * Any left join.
      *
@@ -560,7 +563,7 @@ abstract class BaseBuilder
     {
         return $this->join($table, JoinStrict::ANY, JoinType::LEFT, $using, $global);
     }
-
+    
     /**
      * All left join.
      *
@@ -576,7 +579,7 @@ abstract class BaseBuilder
     {
         return $this->join($table, JoinStrict::ALL, JoinType::LEFT, $using, $global);
     }
-
+    
     /**
      * Any inner join.
      *
@@ -592,7 +595,7 @@ abstract class BaseBuilder
     {
         return $this->join($table, JoinStrict::ANY, JoinType::INNER, $using, $global);
     }
-
+    
     /**
      * All inner join.
      *
@@ -608,7 +611,7 @@ abstract class BaseBuilder
     {
         return $this->join($table, JoinStrict::ALL, JoinType::INNER, $using, $global);
     }
-
+    
     /**
      * Get two elements logic expression to put it in the right place.
      *
@@ -629,26 +632,25 @@ abstract class BaseBuilder
         $value,
         string $concatOperator,
         string $section
-    ) : TwoElementsLogicExpression
-    {
+    ): TwoElementsLogicExpression {
         $expression = new TwoElementsLogicExpression($this);
-
+        
         /*
          * If user passed TwoElementsLogicExpression as first argument, then we assume that user has set up himself.
          */
         if ($column instanceof TwoElementsLogicExpression && is_null($value)) {
             return $column;
         }
-
+        
         if ($column instanceof TwoElementsLogicExpression && $value instanceof TwoElementsLogicExpression) {
             $expression->firstElement($column);
             $expression->secondElement($value);
             $expression->operator($operator);
             $expression->concatOperator($concatOperator);
-
+            
             return $expression;
         }
-
+        
         /*
          * If closure, then we pass fresh query builder inside and based on their state after evaluating try to assume
          * what user expects to perform.
@@ -657,36 +659,36 @@ abstract class BaseBuilder
          */
         if ($column instanceof Closure) {
             $query = tap($this->newQuery(), $column);
-
+            
             if (is_null($query->getFrom()) && empty($query->getColumns())) {
                 $expression->firstElement($query->{"get{$section}"}());
             } else {
                 $expression->firstElement(new Expression("({$query->toSql()})"));
             }
         }
-
+        
         /*
          * If as column was passed builder instance, than we perform subquery in first element position.
          */
         if ($column instanceof BaseBuilder) {
             $expression->firstElementQuery($column);
         }
-
+        
         /*
          * If builder instance given as value, then we assume that sub-query should be used there.
          */
         if ($value instanceof BaseBuilder || $value instanceof Closure) {
             $expression->secondElementQuery($value);
         }
-
+        
         /*
          * Set up other parameters if none of them was set up before in TwoElementsLogicExpression object
          */
-        if (is_null($expression->getFirstElement()) && ! is_null($column)) {
+        if (is_null($expression->getFirstElement()) && !is_null($column)) {
             $expression->firstElement(is_string($column) ? new Identifier($column) : $column);
         }
-
-        if (is_null($expression->getSecondElement()) && ! is_null($value)) {
+        
+        if (is_null($expression->getSecondElement()) && !is_null($value)) {
             if (is_array($value) && count($value) === 2 && Operator::isValid($operator) && in_array(
                     $operator,
                     [Operator::BETWEEN, Operator::NOT_BETWEEN]
@@ -698,7 +700,7 @@ abstract class BaseBuilder
                     ->secondElement($value[1])
                     ->concatOperator($concatOperator);
             }
-
+            
             if (is_array($value) && Operator::isValid($operator) && in_array(
                     $operator,
                     [Operator::IN, Operator::NOT_IN]
@@ -706,19 +708,19 @@ abstract class BaseBuilder
             ) {
                 $value = new Tuple($value);
             }
-
+            
             $expression->secondElement($value);
         }
-
+        
         $expression->concatOperator($concatOperator);
-
+        
         if (is_string($operator)) {
             $expression->operator($operator);
         }
-
+        
         return $expression;
     }
-
+    
     /**
      * Prepare operator for where and prewhere statement.
      *
@@ -728,23 +730,23 @@ abstract class BaseBuilder
      *
      * @return array
      */
-    protected function prepareValueAndOperator($value, $operator, $useDefault = false) : array
+    protected function prepareValueAndOperator($value, $operator, $useDefault = false): array
     {
         if ($useDefault) {
             $value = $operator;
-
+            
             if (is_array($value)) {
                 $operator = Operator::IN;
             } else {
                 $operator = Operator::EQUALS;
             }
-
+            
             return [$value, $operator];
         }
-
+        
         return [$value, $operator];
     }
-
+    
     /**
      * Add prewhere statement.
      *
@@ -758,7 +760,7 @@ abstract class BaseBuilder
     public function preWhere($column, $operator = null, $value = null, string $concatOperator = Operator:: AND)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
-
+        
         $this->prewheres[] = $this->assembleTwoElementsLogicExpression(
             $column,
             $operator,
@@ -766,10 +768,10 @@ abstract class BaseBuilder
             $concatOperator,
             'prewheres'
         );
-
+        
         return $this;
     }
-
+    
     /**
      * Add prewhere statement "as is".
      *
@@ -781,7 +783,7 @@ abstract class BaseBuilder
     {
         return $this->preWhere(new Expression($expression));
     }
-
+    
     /**
      * Add prewhere statement "as is", but with OR operator.
      *
@@ -793,7 +795,7 @@ abstract class BaseBuilder
     {
         return $this->preWhere(new Expression($expression), null, null, Operator:: OR);
     }
-
+    
     /**
      * Add prewhere statement but with OR operator.
      *
@@ -806,10 +808,10 @@ abstract class BaseBuilder
     public function orPreWhere($column, $operator = null, $value = null)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
-
+        
         return $this->prewhere($column, $operator, $value, Operator:: OR);
     }
-
+    
     /**
      * Add prewhere statement with IN operator.
      *
@@ -823,16 +825,16 @@ abstract class BaseBuilder
     public function preWhereIn($column, $values, $boolean = Operator:: AND, $not = false)
     {
         $type = $not ? Operator::NOT_IN : Operator::IN;
-
+        
         if (is_array($values)) {
             $values = new Tuple($values);
         } elseif (is_string($values) && isset($this->files[$values])) {
             $values = new Identifier($values);
         }
-
+        
         return $this->preWhere($column, $type, $values, $boolean);
     }
-
+    
     /**
      * Add prewhere statement with IN operator and OR operator.
      *
@@ -845,7 +847,7 @@ abstract class BaseBuilder
     {
         return $this->preWhereIn($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add prewhere statement with NOT IN operator.
      *
@@ -859,7 +861,7 @@ abstract class BaseBuilder
     {
         return $this->preWhereIn($column, $values, $boolean, true);
     }
-
+    
     /**
      * Add prewhere statement with NOT IN operator and OR operator.
      *
@@ -873,7 +875,7 @@ abstract class BaseBuilder
     {
         return $this->preWhereNotIn($column, $values, $boolean);
     }
-
+    
     /**
      * Add prewhere statement with BETWEEN simulation.
      *
@@ -887,10 +889,10 @@ abstract class BaseBuilder
     public function preWhereBetween($column, array $values, $boolean = Operator:: AND, $not = false)
     {
         $type = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
-
+        
         return $this->preWhere($column, $type, [$values[0], $values[1]], $boolean);
     }
-
+    
     /**
      * Add prewhere statement with BETWEEN simulation, but with column names as value.
      *
@@ -904,10 +906,10 @@ abstract class BaseBuilder
     public function preWhereBetweenColumns($column, array $values, $boolean = Operator:: AND, $not = false)
     {
         $type = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
-
+        
         return $this->preWhere($column, $type, [new Identifier($values[0]), new Identifier($values[1])], $boolean);
     }
-
+    
     /**
      * Add prewhere statement with NOT BETWEEN simulation, but with column names as value.
      *
@@ -919,9 +921,14 @@ abstract class BaseBuilder
      */
     public function preWhereNotBetweenColumns($column, array $values, $boolean = Operator:: AND)
     {
-        return $this->preWhere($column, Operator::NOT_BETWEEN, [new Identifier($values[0]), new Identifier($values[1])], $boolean);
+        return $this->preWhere(
+            $column,
+            Operator::NOT_BETWEEN,
+            [new Identifier($values[0]), new Identifier($values[1])],
+            $boolean
+        );
     }
-
+    
     /**
      * Add prewhere statement with BETWEEN simulation, but with column names as value and OR operator.
      *
@@ -934,7 +941,7 @@ abstract class BaseBuilder
     {
         return $this->preWhereBetweenColumns($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add prewhere statement with NOT BETWEEN simulation, but with column names as value and OR operator.
      *
@@ -947,7 +954,7 @@ abstract class BaseBuilder
     {
         return $this->preWhereNotBetweenColumns($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add prewhere statement with BETWEEN simulation and OR operator.
      *
@@ -960,7 +967,7 @@ abstract class BaseBuilder
     {
         return $this->preWhereBetween($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add prewhere statement with NOT BETWEEN simulation.
      *
@@ -974,7 +981,7 @@ abstract class BaseBuilder
     {
         return $this->preWhereBetween($column, $values, $boolean, true);
     }
-
+    
     /**
      * Add prewhere statement with NOT BETWEEN simulation and OR operator.
      *
@@ -987,7 +994,7 @@ abstract class BaseBuilder
     {
         return $this->preWhereNotBetween($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add where statement.
      *
@@ -1001,7 +1008,7 @@ abstract class BaseBuilder
     public function where($column, $operator = null, $value = null, string $concatOperator = Operator:: AND)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
-
+        
         $this->wheres[] = $this->assembleTwoElementsLogicExpression(
             $column,
             $operator,
@@ -1009,10 +1016,10 @@ abstract class BaseBuilder
             $concatOperator,
             'wheres'
         );
-
+        
         return $this;
     }
-
+    
     /**
      * Add where statement "as is".
      *
@@ -1024,7 +1031,7 @@ abstract class BaseBuilder
     {
         return $this->where(new Expression($expression));
     }
-
+    
     /**
      * Add where statement "as is" with OR operator.
      *
@@ -1036,7 +1043,7 @@ abstract class BaseBuilder
     {
         return $this->where(new Expression($expression), null, null, Operator:: OR);
     }
-
+    
     /**
      * Add where statement with OR operator.
      *
@@ -1049,10 +1056,10 @@ abstract class BaseBuilder
     public function orWhere($column, $operator = null, $value = null)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
-
+        
         return $this->where($column, $operator, $value, Operator:: OR);
     }
-
+    
     /**
      * Add where statement with IN operator.
      *
@@ -1066,16 +1073,16 @@ abstract class BaseBuilder
     public function whereIn($column, $values, $boolean = Operator:: AND, $not = false)
     {
         $type = $not ? Operator::NOT_IN : Operator::IN;
-
+        
         if (is_array($values)) {
             $values = new Tuple($values);
         } elseif (is_string($values) && isset($this->files[$values])) {
             $values = new Identifier($values);
         }
-
+        
         return $this->where($column, $type, $values, $boolean);
     }
-
+    
     /**
      * Add where statement with GLOBAL option and IN operator.
      *
@@ -1089,16 +1096,16 @@ abstract class BaseBuilder
     public function whereGlobalIn($column, $values, $boolean = Operator:: AND, $not = false)
     {
         $type = $not ? Operator::GLOBAL_NOT_IN : Operator::GLOBAL_IN;
-
+        
         if (is_array($values)) {
             $values = new Tuple($values);
         } elseif (is_string($values) && isset($this->files[$values])) {
             $values = new Identifier($values);
         }
-
+        
         return $this->where($column, $type, $values, $boolean);
     }
-
+    
     /**
      * Add where statement with GLOBAL option and IN operator and OR operator.
      *
@@ -1111,7 +1118,7 @@ abstract class BaseBuilder
     {
         return $this->whereGlobalIn($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add where statement with GLOBAL option and NOT IN operator.
      *
@@ -1125,7 +1132,7 @@ abstract class BaseBuilder
     {
         return $this->whereGlobalIn($column, $values, $boolean, true);
     }
-
+    
     /**
      * Add where statement with GLOBAL option and NOT IN operator and OR operator.
      *
@@ -1139,7 +1146,7 @@ abstract class BaseBuilder
     {
         return $this->whereGlobalNotIn($column, $values, $boolean);
     }
-
+    
     /**
      * Add where statement with IN operator and OR operator.
      *
@@ -1152,7 +1159,7 @@ abstract class BaseBuilder
     {
         return $this->whereIn($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add where statement with NOT IN operator.
      *
@@ -1166,7 +1173,7 @@ abstract class BaseBuilder
     {
         return $this->whereIn($column, $values, $boolean, true);
     }
-
+    
     /**
      * Add where statement with NOT IN operator and OR operator.
      *
@@ -1180,7 +1187,7 @@ abstract class BaseBuilder
     {
         return $this->whereNotIn($column, $values, $boolean);
     }
-
+    
     /**
      * Add where statement with BETWEEN simulation.
      *
@@ -1194,10 +1201,10 @@ abstract class BaseBuilder
     public function whereBetween($column, array $values, $boolean = Operator:: AND, $not = false)
     {
         $operator = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
-
+        
         return $this->where($column, $operator, [$values[0], $values[1]], $boolean);
     }
-
+    
     /**
      * Add where statement with BETWEEN simulation, but with column names as value.
      *
@@ -1211,10 +1218,10 @@ abstract class BaseBuilder
     public function whereBetweenColumns($column, array $values, $boolean = Operator:: AND, $not = false)
     {
         $type = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
-
+        
         return $this->where($column, $type, [new Identifier($values[0]), new Identifier($values[1])], $boolean);
     }
-
+    
     /**
      * Add where statement with BETWEEN simulation, but with column names as value and OR operator.
      *
@@ -1227,7 +1234,7 @@ abstract class BaseBuilder
     {
         return $this->whereBetweenColumns($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add where statement with BETWEEN simulation and OR operator.
      *
@@ -1240,7 +1247,7 @@ abstract class BaseBuilder
     {
         return $this->whereBetween($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add where statement with NOT BETWEEN simulation.
      *
@@ -1254,7 +1261,7 @@ abstract class BaseBuilder
     {
         return $this->whereBetween($column, $values, $boolean, true);
     }
-
+    
     /**
      * Add prewhere statement with NOT BETWEEN simulation and OR operator.
      *
@@ -1267,7 +1274,7 @@ abstract class BaseBuilder
     {
         return $this->whereNotBetween($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add having statement.
      *
@@ -1281,12 +1288,18 @@ abstract class BaseBuilder
     public function having($column, $operator = null, $value = null, string $concatOperator = Operator:: AND)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
-
-        $this->havings[] = $this->assembleTwoElementsLogicExpression($column, $operator, $value, $concatOperator, 'havings');
-
+        
+        $this->havings[] = $this->assembleTwoElementsLogicExpression(
+            $column,
+            $operator,
+            $value,
+            $concatOperator,
+            'havings'
+        );
+        
         return $this;
     }
-
+    
     /**
      * Add having statement "as is".
      *
@@ -1298,7 +1311,7 @@ abstract class BaseBuilder
     {
         return $this->having(new Expression($expression));
     }
-
+    
     /**
      * Add having statement "as is" with OR operator.
      *
@@ -1310,7 +1323,7 @@ abstract class BaseBuilder
     {
         return $this->having(new Expression($expression), null, null, Operator:: OR);
     }
-
+    
     /**
      * Add having statement with OR operator.
      *
@@ -1323,10 +1336,10 @@ abstract class BaseBuilder
     public function orHaving($column, $operator = null, $value = null)
     {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
-
+        
         return $this->having($column, $operator, $value, Operator:: OR);
     }
-
+    
     /**
      * Add having statement with IN operator.
      *
@@ -1340,16 +1353,16 @@ abstract class BaseBuilder
     public function havingIn($column, $values, $boolean = Operator:: AND, $not = false)
     {
         $type = $not ? Operator::NOT_IN : Operator::IN;
-
+        
         if (is_array($values)) {
             $values = new Tuple($values);
         } elseif (is_string($values) && isset($this->files[$values])) {
             $values = new Identifier($values);
         }
-
+        
         return $this->having($column, $type, $values, $boolean);
     }
-
+    
     /**
      * Add having statement with IN operator and OR operator.
      *
@@ -1362,7 +1375,7 @@ abstract class BaseBuilder
     {
         return $this->havingIn($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add having statement with NOT IN operator.
      *
@@ -1376,7 +1389,7 @@ abstract class BaseBuilder
     {
         return $this->havingIn($column, $values, $boolean, true);
     }
-
+    
     /**
      * Add having statement with NOT IN operator and OR operator.
      *
@@ -1390,7 +1403,7 @@ abstract class BaseBuilder
     {
         return $this->havingNotIn($column, $values, $boolean);
     }
-
+    
     /**
      * Add having statement with BETWEEN simulation.
      *
@@ -1404,10 +1417,10 @@ abstract class BaseBuilder
     public function havingBetween($column, array $values, $boolean = Operator:: AND, $not = false)
     {
         $operator = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
-
+        
         return $this->having($column, $operator, [$values[0], $values[1]], $boolean);
     }
-
+    
     /**
      * Add having statement with BETWEEN simulation, but with column names as value.
      *
@@ -1421,10 +1434,10 @@ abstract class BaseBuilder
     public function havingBetweenColumns($column, array $values, $boolean = Operator:: AND, $not = false)
     {
         $type = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
-
+        
         return $this->having($column, $type, [new Identifier($values[0]), new Identifier($values[1])], $boolean);
     }
-
+    
     /**
      * Add having statement with BETWEEN simulation, but with column names as value and OR operator.
      *
@@ -1437,7 +1450,7 @@ abstract class BaseBuilder
     {
         return $this->havingBetweenColumns($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add having statement with BETWEEN simulation and OR operator.
      *
@@ -1450,7 +1463,7 @@ abstract class BaseBuilder
     {
         return $this->havingBetween($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add having statement with NOT BETWEEN simulation.
      *
@@ -1464,7 +1477,7 @@ abstract class BaseBuilder
     {
         return $this->havingBetween($column, $values, $boolean, true);
     }
-
+    
     /**
      * Add having statement with NOT BETWEEN simulation and OR operator.
      *
@@ -1477,7 +1490,7 @@ abstract class BaseBuilder
     {
         return $this->havingNotBetween($column, $values, Operator:: OR);
     }
-
+    
     /**
      * Add dictionary value to select statement.
      *
@@ -1493,13 +1506,16 @@ abstract class BaseBuilder
         if (is_null($as)) {
             $as = $attribute;
         }
-
-        $id = is_array($key) ? 'tuple(' . implode(', ', array_map([$this->grammar, 'wrap'], $key)) . ')' : $this->grammar->wrap($key);
-
+        
+        $id = is_array($key) ? 'tuple('.implode(
+                ', ',
+                array_map([$this->grammar, 'wrap'], $key)
+            ).')' : $this->grammar->wrap($key);
+        
         return $this
             ->addSelect(new Expression("dictGetString('{$dict}', '{$attribute}', {$id}) as `{$as}`"));
     }
-
+    
     /**
      * Add where on dictionary value in where statement.
      *
@@ -1519,15 +1535,14 @@ abstract class BaseBuilder
         $operator = null,
         $value = null,
         string $concatOperator = Operator:: AND
-    )
-    {
+    ) {
         $this->addSelectDict($dict, $attribute, $key);
-
+        
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 4);
-
+        
         return $this->where($attribute, $operator, $value, $concatOperator);
     }
-
+    
     /**
      * Add where on dictionary value in where statement and OR operator.
      *
@@ -1545,13 +1560,12 @@ abstract class BaseBuilder
         $key,
         $operator = null,
         $value = null
-    )
-    {
+    ) {
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 4);
-
+        
         return $this->whereDict($dict, $attribute, $key, $operator, $value, Operator:: OR);
     }
-
+    
     /**
      * Add request which must be runned asynchronous.
      *
@@ -1564,20 +1578,20 @@ abstract class BaseBuilder
         if (is_null($asyncQueries)) {
             return $this->async[] = $this->newQuery();
         }
-
+        
         if ($asyncQueries instanceof Closure) {
             $asyncQueries = tap($this->newQuery(), $asyncQueries);
         }
-
+        
         if ($asyncQueries instanceof BaseBuilder) {
             $this->async[] = $asyncQueries;
         } else {
             throw new \InvalidArgumentException('Argument for async method must be Closure, Builder or nothing');
         }
-
+        
         return $this;
     }
-
+    
     /**
      * Add limit statement.
      *
@@ -1589,10 +1603,10 @@ abstract class BaseBuilder
     public function limit(int $limit, int $offset = null)
     {
         $this->limit = new Limit($limit, $offset);
-
+        
         return $this;
     }
-
+    
     /**
      * Add limit n by statement.
      *
@@ -1604,12 +1618,12 @@ abstract class BaseBuilder
     public function limitBy(int $count, ...$columns)
     {
         $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
-
+        
         $this->limitBy = new Limit($count, null, $this->processColumns($columns, false));
-
+        
         return $this;
     }
-
+    
     /**
      * Alias for limit method.
      *
@@ -1622,7 +1636,7 @@ abstract class BaseBuilder
     {
         return $this->limit($limit, $offset);
     }
-
+    
     /**
      * Alias for limitBy method.
      *
@@ -1635,7 +1649,7 @@ abstract class BaseBuilder
     {
         return $this->limitBy($count, ...$columns);
     }
-
+    
     /**
      * Add group by statement.
      *
@@ -1646,16 +1660,16 @@ abstract class BaseBuilder
     public function groupBy(...$columns)
     {
         $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
-
+        
         if (empty($columns)) {
             $columns[] = '*';
         }
-
+        
         $this->groups = $this->processColumns($columns, false);
-
+        
         return $this;
     }
-
+    
     /**
      * Add group by statement to exist group statements
      *
@@ -1666,16 +1680,16 @@ abstract class BaseBuilder
     public function addGroupBy(...$columns)
     {
         $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
-
+        
         if (empty($columns)) {
             $columns[] = '*';
         }
-
+        
         $this->groups = array_merge($this->groups, $this->processColumns($columns, false));
-
+        
         return $this;
     }
-
+    
     /**
      * Add order by statement.
      *
@@ -1688,14 +1702,14 @@ abstract class BaseBuilder
     public function orderBy($column, string $direction = 'asc', string $collate = null)
     {
         $column = $this->processColumns([$column], false)[0];
-
+        
         $direction = new OrderDirection(strtoupper($direction));
-
+        
         $this->orders[] = [$column, $direction, $collate];
-
+        
         return $this;
     }
-
+    
     /**
      * Add order by statement "as is".
      *
@@ -1707,10 +1721,10 @@ abstract class BaseBuilder
     {
         $column = $this->processColumns([new Expression($expression)], false)[0];
         $this->orders[] = [$column, null, null];
-
+        
         return $this;
     }
-
+    
     /**
      * Add ASC order statement.
      *
@@ -1723,7 +1737,7 @@ abstract class BaseBuilder
     {
         return $this->orderBy($column, OrderDirection::ASC, $collate);
     }
-
+    
     /**
      * Add DESC order statement.
      *
@@ -1736,7 +1750,7 @@ abstract class BaseBuilder
     {
         return $this->orderBy($column, OrderDirection::DESC, $collate);
     }
-
+    
     /**
      * Set query result format.
      *
@@ -1747,218 +1761,221 @@ abstract class BaseBuilder
     public function format(string $format)
     {
         $this->format = new Format(strtoupper($format));
-
+        
         return $this;
     }
-
+    
     /**
      * Get the SQL representation of the query.
      *
      * @return string
      */
-    public function toSql() : string
+    public function toSql(): string
     {
         return $this->grammar->compileSelect($this);
     }
-
+    
     /**
      * Get an array of the SQL queries from all added async builders.
      *
      * @return array
      */
-    public function toAsyncSqls() : array
+    public function toAsyncSqls(): array
     {
-        return array_map(function ($query) {
-            return [$query->toSql(), [], $query->getFiles()];
-        }, $this->getAsyncQueries());
+        return array_map(
+            function ($query) {
+                return ['query' => $query->toSql(), 'files' => $query->getFiles()];
+            },
+            $this->getAsyncQueries()
+        );
     }
-
+    
     /**
      * Get columns for select statement.
      *
      * @return array
      */
-    public function getColumns() : array
+    public function getColumns(): array
     {
         return $this->columns;
     }
-
+    
     /**
      * Get order statements.
      *
      * @return array
      */
-    public function getOrders() : array
+    public function getOrders(): array
     {
         return $this->orders;
     }
-
+    
     /**
      * Get group statements.
      *
      * @return array
      */
-    public function getGroups() : array
+    public function getGroups(): array
     {
         return $this->groups;
     }
-
+    
     /**
      * Get having statements.
      *
      * @return array
      */
-    public function getHavings() : array
+    public function getHavings(): array
     {
         return $this->havings;
     }
-
+    
     /**
      * Get prewhere statements.
      *
      * @return array
      */
-    public function getPreWheres() : array
+    public function getPreWheres(): array
     {
         return $this->prewheres;
     }
-
+    
     /**
      * Get where statements.
      *
      * @return array
      */
-    public function getWheres() : array
+    public function getWheres(): array
     {
         return $this->wheres;
     }
-
+    
     /**
      * Get From object.
      *
      * @return From|null
      */
-    public function getFrom() : ?From
+    public function getFrom(): ?From
     {
         return $this->from;
     }
-
+    
     /**
      * Get ArrayJoinClause
      *
      * @return null|ArrayJoinClause
      */
-    public function getArrayJoin() : ?ArrayJoinClause
+    public function getArrayJoin(): ?ArrayJoinClause
     {
         return $this->arrayJoin;
     }
-
+    
     /**
      * Get JoinClause.
      *
      * @return JoinClause
      */
-    public function getJoin() : ?JoinClause
+    public function getJoin(): ?JoinClause
     {
         return $this->join;
     }
-
+    
     /**
      * Get limit statement.
      *
      * @return Limit
      */
-    public function getLimit() : ?Limit
+    public function getLimit(): ?Limit
     {
         return $this->limit;
     }
-
+    
     /**
      * Get limit by statement.
      *
      * @return Limit
      */
-    public function getLimitBy() : ?Limit
+    public function getLimitBy(): ?Limit
     {
         return $this->limitBy;
     }
-
+    
     /**
      * Get sample statement.
      *
      * @return float|null
      */
-    public function getSample() : ?float
+    public function getSample(): ?float
     {
         return $this->sample;
     }
-
+    
     /**
      * Get query unions.
      *
      * @return array
      */
-    public function getUnions() : array
+    public function getUnions(): array
     {
         return $this->unions;
     }
-
+    
     /**
      * Get format.
      *
      * @return null|Format
      */
-    public function getFormat() : ?Format
+    public function getFormat(): ?Format
     {
         return $this->format;
     }
-
+    
     /**
      * Add file which should be sent on server
      *
-     * @param string      $filePath
-     * @param string      $tableName
-     * @param array       $structure
-     * @param string|null $format
+     * @param string|FileInterface $filePath
+     * @param string               $tableName
+     * @param array                $structure
+     * @param string|null          $format
      *
      * @return static
      *
      * @throws BuilderException
      */
-    public function addFile(string $filePath, string $tableName, array $structure, string $format = Format::CSV)
+    public function addFile($filePath, string $tableName, array $structure, string $format = Format::CSV)
     {
         if (isset($this->files[$tableName])) {
             throw BuilderException::temporaryTableAlreadyExists($tableName);
         }
-
+        
         $this->files[$tableName] = new TempTable($tableName, $filePath, $structure, $format);
-
+        
         return $this;
     }
-
+    
     /**
      * Returns files which should be sent on server
      *
      * @return array
      */
-    public function getFiles() : array
+    public function getFiles(): array
     {
         return $this->files;
     }
-
+    
     /**
      * Gather all builders from builder. Including nested in async builders.
      *
      * @return array
      */
-    public function getAsyncQueries() : array
+    public function getAsyncQueries(): array
     {
         $result = [];
-
+        
         foreach ($this->async as $query) {
             $result = array_merge($query->getAsyncQueries(), $result);
         }
-
+        
         return array_merge([$this], $result);
     }
 }

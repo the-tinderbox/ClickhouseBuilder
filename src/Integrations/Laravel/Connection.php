@@ -6,13 +6,13 @@ use Tinderbox\Clickhouse\Client;
 use Tinderbox\Clickhouse\Cluster;
 use Tinderbox\Clickhouse\Common\ServerOptions;
 use Tinderbox\Clickhouse\Interfaces\TransportInterface;
+use Tinderbox\Clickhouse\Query;
 use Tinderbox\Clickhouse\Server;
-use Tinderbox\Clickhouse\Transport\ClickhouseCLIClientTransport;
+use Tinderbox\Clickhouse\ServerProvider;
 use Tinderbox\Clickhouse\Transport\HttpTransport;
 use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Exceptions\NotSupportedException;
 use Tinderbox\ClickhouseBuilder\Query\Expression;
-use Tinderbox\Clickhouse\Query\QueryStatistic;
 
 class Connection extends \Illuminate\Database\Connection
 {
@@ -22,116 +22,66 @@ class Connection extends \Illuminate\Database\Connection
      * @var Client
      */
     protected $client;
-
+    
     /**
      * Given config.
      *
      * @var array
      */
     protected $config;
-
+    
     /**
      * All of the queries run against the connection.
      *
      * @var array
      */
     protected $queryLog = [];
-
+    
     /**
      * Indicates whether queries are being logged.
      *
      * @var bool
      */
     protected $loggingQueries = false;
-
+    
     /**
      * The event dispatcher instance.
      *
      * @var \Illuminate\Contracts\Events\Dispatcher
      */
     protected $events;
-
+    
     /**
      * Indicates if the connection is in a "dry run".
      *
      * @var bool
      */
     protected $pretending = false;
-
+    
     /**
      * Last executed query statistic
      *
-     * @var \Tinderbox\Clickhouse\Query\QueryStatisitc
+     * @var \Tinderbox\Clickhouse\Query\QueryStatistic
      */
     protected $lastQueryStatistic;
-
+    
     /**
      * Create a new database connection instance.
      *
      * Config should be like this structure for server:
-     *
-     * $config = [
-     *      'host' => '',
-     *      'port' => '',
-     *      'database' => '',
-     *      'username' => '',
-     *      'password' => '',
-     *      'options' => [
-     *          'timeout' => 10,
-     *          'protocol' => 'https'
-     *      ],
-     *      'transport' => 'cli',
-     *      'transportOptions' => [
-     *          'executable' => '/usr/bin/clickhouse-client'
-     *      ]
-     * ];
-     *
-     * And like this structure for cluster:
-     *
-     * $config = [
-     *      'cluster' => [
-     *          'server-1' => [
-     *              'host' => '',
-     *              'port' => '',
-     *              'database' => '',
-     *              'username' => '',
-     *              'password' => '',
-     *              'options' => [
-     *                  'timeout' => 10,
-     *                  'protocol' => 'https'
-     *              ]
-     *          ],
-     *
-     *          'server-2' => [
-     *              'host' => '',
-     *              'port' => '',
-     *              'database' => '',
-     *              'username' => '',
-     *              'password' => '',
-     *              'options' => [
-     *                  'timeout' => 10,
-     *                  'protocol' => 'https'
-     *              ]
-     *          ]
-     *      ]
-     * ];
      *
      * @param array $config
      */
     public function __construct(array $config)
     {
         $this->config = $config;
-
-        $server = $this->assembleClientServer($config);
-
-        $transport = $this->createTransport($config['transport'] ?? 'http', $config['transportOptions'] ?? []);
-        $this->client = $this->createClientFor($server, $transport);
-
-        if (isset($config['random_server']) && $config['random_server'] === true) {
-            $this->client->useRandomServer(true);
-        }
+        
+        $serverProvider = $this->assembleServerProvider($config);
+        
+        $transport = $this->createTransport($config['transportOptions'] ?? []);
+        $this->client = $this->createClientFor($serverProvider, $transport);
     }
-
+    
     /**
      * Returns given config.
      *
@@ -144,10 +94,10 @@ class Connection extends \Illuminate\Database\Connection
         if (is_null($option)) {
             return $this->config;
         }
-
+        
         return $this->config[$option] ?? null;
     }
-
+    
     /**
      * Returns statistic for last query
      *
@@ -159,10 +109,10 @@ class Connection extends \Illuminate\Database\Connection
         if (is_null($this->lastQueryStatistic)) {
             throw new BuilderException('Run query before trying to get statistic');
         }
-
+        
         return $this->lastQueryStatistic;
     }
-
+    
     /**
      * Sets last query statistic
      *
@@ -172,11 +122,11 @@ class Connection extends \Illuminate\Database\Connection
     {
         $this->lastQueryStatistic = $queryStatistic;
     }
-
+    
     /**
      * Creates Clickhouse client.
      *
-     * @param mixed              $server
+     * @param mixed $server
      * @param TransportInterface $transport
      *
      * @return Client
@@ -185,7 +135,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         return new Client($server, null, $transport);
     }
-
+    
     /**
      * Creates transport
      *
@@ -194,46 +144,48 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @return \Tinderbox\Clickhouse\Interfaces\TransportInterface
      */
-    protected function createTransport(string $transport, array $options) : TransportInterface
+    protected function createTransport(array $options): TransportInterface
     {
+        $transport = 'http';
+        
         switch ($transport) {
             case 'http':
-                return new HttpTransport();
-                break;
-
-            case 'cli':
-                return new ClickhouseCLIClientTransport(
-                    $options['executable'] ?? null,
-                    $options['catExecutable'] ?? null,
-                    $options['ccatExecutable'] ?? null,
-                    $options['useCcat'] ?? false
-                );
+                return new HttpTransport($options['client'] ?? null, $options['timeout'] ?? 5.0);
                 break;
         }
     }
-
+    
     /**
-     * Assemble Server or Cluster depends on given config.
+     * Assemble ServerProvider.
      *
      * @param array $config
      *
-     * @return Cluster|Server
+     * @return ServerProvider
      */
-    protected function assembleClientServer(array $config)
+    protected function assembleServerProvider(array $config)
     {
-        if (isset($config['cluster'])) {
-            $cluster = new Cluster();
-
-            foreach ($config['cluster'] as $hostname => $server) {
-                $cluster->addServer($hostname, $this->assembleServer($server));
-            }
-
-            return $cluster;
-        } else {
-            return $this->assembleServer($config);
+        $serverProvider = new ServerProvider();
+        
+        foreach ($config['clusters'] ?? [] as $clusterName => $servers) {
+            $cluster = new Cluster(
+                $clusterName, array_map(
+                    function ($server) {
+                        return $this->assembleServer($server);
+                    },
+                    $servers
+                )
+            );
+            
+            $serverProvider->addCluster($cluster);
         }
+        
+        foreach ($config['servers'] ?? [] as $server) {
+            $serverProvider->addServer($this->assembleServer($server));
+        }
+        
+        return $serverProvider;
     }
-
+    
     /**
      * Assemble Server instance from array.
      *
@@ -241,7 +193,7 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @return Server
      */
-    protected function assembleServer(array $server) : Server
+    protected function assembleServer(array $server): Server
     {
         /* @var string $host */
         /* @var string $port */
@@ -250,25 +202,27 @@ class Connection extends \Illuminate\Database\Connection
         /* @var string $password */
         /* @var array $options */
         extract($server);
-
+        
         if (isset($options)) {
-            $timeout = $options['timeout'] ?? null;
             $protocol = $options['protocol'] ?? null;
-
+            
             $options = new ServerOptions();
-
-            if (! is_null($timeout)) {
-                $options->setTimeout($timeout);
-            }
-
-            if (! is_null($protocol)) {
+            
+            if (!is_null($protocol)) {
                 $options->setProtocol($protocol);
             }
         }
-
-        return new Server($host, $port ?? null, $database ?? null, $username ?? null, $password ?? null, $options ?? null);
+        
+        return new Server(
+            $host,
+            $port ?? null,
+            $database ?? null,
+            $username ?? null,
+            $password ?? null,
+            $options ?? null
+        );
     }
-
+    
     /**
      * Get a new query builder instance.
      *
@@ -278,7 +232,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         return new Builder($this);
     }
-
+    
     /**
      * Begin a fluent query against a database table.
      *
@@ -290,7 +244,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         return $this->query()->from($table);
     }
-
+    
     /**
      * Get a new raw query expression.
      *
@@ -302,7 +256,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         return new Expression($value);
     }
-
+    
     /**
      * Start a new database transaction.
      *
@@ -314,17 +268,17 @@ class Connection extends \Illuminate\Database\Connection
     {
         throw NotSupportedException::transactions();
     }
-
+    
     /**
      * Returns Clickhouse client.
      *
      * @return Client
      */
-    public function getClient() : Client
+    public function getClient(): Client
     {
         return $this->client;
     }
-
+    
     /**
      * Set client to the connection.
      *
@@ -332,13 +286,13 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @return Connection
      */
-    public function setClient(Client $client) : self
+    public function setClient(Client $client): self
     {
         $this->client = $client;
-
+        
         return $this;
     }
-
+    
     /**
      * Run a select statement against the database.
      *
@@ -350,15 +304,15 @@ class Connection extends \Illuminate\Database\Connection
      */
     public function select($query, $bindings = [], $tables = [])
     {
-        $result = $this->getClient()->select($query, $bindings, $tables);
-
+        $result = $this->getClient()->readOne($query, $bindings, $tables);
+        
         $this->logQuery($query, $bindings, $result->getStatistic()->getTime());
-
+        
         $this->setLastQueryStatistic($result->getStatistic());
-
+        
         return $result->getRows();
     }
-
+    
     /**
      * Run a select statements in async mode.
      *
@@ -369,25 +323,25 @@ class Connection extends \Illuminate\Database\Connection
     public function selectAsync(array $queries)
     {
         $queriesKeys = array_keys($queries);
-        $results = array_combine($queriesKeys, $this->getClient()->selectAsync($queries));
+        $results = array_combine($queriesKeys, $this->getClient()->read($queries));
         $statistic = [];
-
+        
         foreach ($results as $i => $result) {
             /* @var \Tinderbox\Clickhouse\Query\Result $result */
-            $query = $queries[$i][0];
-            $bindings = $queries[$i][1] ?? [];
-
-            $this->logQuery($query, $bindings, $result->getStatistic()->getTime());
-
+            /* @var Query $query */
+            $query = $queries[$i];
+            
+            $this->logQuery($query->getQuery(), [], $result->getStatistic()->getTime());
+            
             $results[$i] = $result->getRows();
             $statistic[$i] = $result->getStatistic();
         }
-
+        
         $this->setLastQueryStatistic($statistic);
-
+        
         return $results;
     }
-
+    
     /**
      * Commit the active database transaction.
      *
@@ -399,7 +353,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         throw NotSupportedException::transactions();
     }
-
+    
     /**
      * Rollback the active database transaction.
      *
@@ -411,7 +365,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         throw NotSupportedException::transactions();
     }
-
+    
     /**
      * Get the number of active transactions.
      *
@@ -423,7 +377,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         throw NotSupportedException::transactions();
     }
-
+    
     /**
      * Execute a Closure within a transaction.
      *
@@ -438,7 +392,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         throw NotSupportedException::transactions();
     }
-
+    
     /**
      * Run an insert statement against the database.
      *
@@ -450,14 +404,14 @@ class Connection extends \Illuminate\Database\Connection
     public function insert($query, $bindings = [])
     {
         $startTime = microtime(true);
-
-        $result = $this->getClient()->insert($query, $bindings);
-
+        
+        $result = $this->getClient()->writeOne($query, $bindings);
+        
         $this->logQuery($query, $bindings, microtime(true) - $startTime);
-
+        
         return $result;
     }
-
+    
     /**
      * Run async insert queries from local CSV or TSV files.
      *
@@ -471,13 +425,13 @@ class Connection extends \Illuminate\Database\Connection
      */
     public function insertFiles($table, array $columns, array $files, $format = null, $concurrency = 5)
     {
-        $result = $this->getClient()->insertFiles($table, $columns, $files, $format, $concurrency);
-
-        $this->logQuery("INSERT FILES INTO {$table}", $files);
-
+        $result = $this->getClient()->writeFiles($table, $columns, $files, $format, [], $concurrency);
+        
+        $this->logQuery("INSERT ".count($files)." FILES INTO {$table}", []);
+        
         return $result;
     }
-
+    
     /**
      * Run an update statement against the database.
      *
@@ -485,14 +439,12 @@ class Connection extends \Illuminate\Database\Connection
      * @param array  $bindings
      *
      * @throws NotSupportedException
-     *
-     * @return int
      */
     public function update($query, $bindings = [])
     {
-        throw NotSupportedException::updateAndDelete();
+        throw NotSupportedException::update();
     }
-
+    
     /**
      * Run a delete statement against the database.
      *
@@ -505,7 +457,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         return $this->statement($query);
     }
-
+    
     /**
      * Run an SQL statement and get the number of rows affected.
      *
@@ -513,14 +465,12 @@ class Connection extends \Illuminate\Database\Connection
      * @param array  $bindings
      *
      * @throws NotSupportedException
-     *
-     * @return int
      */
     public function affectingStatement($query, $bindings = [])
     {
         throw NotSupportedException::updateAndDelete();
     }
-
+    
     /**
      * Run a select statement and return a single result.
      *
@@ -533,14 +483,14 @@ class Connection extends \Illuminate\Database\Connection
     public function selectOne($query, $bindings = [], $useReadPdo = true)
     {
         $start = microtime(true);
-
+        
         $result = $this->select($query, $bindings);
-
+        
         $this->logQuery($query, $bindings, microtime(true) - $start);
-
+        
         return array_shift($result);
     }
-
+    
     /**
      * Execute an SQL statement and return the boolean result.
      *
@@ -552,14 +502,14 @@ class Connection extends \Illuminate\Database\Connection
     public function statement($query, $bindings = [])
     {
         $start = microtime(true);
-
-        $result = $this->getClient()->statement($query, $bindings);
-
+        
+        $result = $this->getClient()->writeOne($query, $bindings);
+        
         $this->logQuery($query, $bindings, microtime(true) - $start);
-
+        
         return $result;
     }
-
+    
     /**
      * Run a raw, unprepared query against the PDO connection.
      *
@@ -571,7 +521,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         return $this->statement($query);
     }
-
+    
     /**
      * Choose server to perform queries.
      *
@@ -579,10 +529,36 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @return \Tinderbox\ClickhouseBuilder\Integrations\Laravel\Connection
      */
-    public function using(string $hostname) : self
+    public function using(string $hostname): self
     {
         $this->getClient()->using($hostname);
-
+        
+        return $this;
+    }
+    
+    /**
+     * Choose cluster to perform queries.
+     *
+     * @param string $clusterName
+     *
+     * @return Connection
+     */
+    public function onCluster(string $clusterName): self
+    {
+        $this->getClient()->onCluster($clusterName);
+        
+        return $this;
+    }
+    
+    /**
+     * Choose random server for each query.
+     *
+     * @return Connection
+     */
+    public function usingRandomServer(): self
+    {
+        $this->getClient()->usingRandomServer();
+        
         return $this;
     }
 }

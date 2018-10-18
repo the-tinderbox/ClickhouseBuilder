@@ -9,7 +9,7 @@ class NotSupportedException extends Exception
         return new static('Transactions is not supported by Clickhouse');
     }
 
-    public static function updateAndDelete()
+    public static function update()
     {
         return new static('Update and delete queries is not supported by Clickhouse');
     }

@@ -27,16 +27,14 @@ class Builder extends BaseBuilder
     /**
      * Perform compiled from builder sql query and getting result.
      *
-     * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
-     *
      * @return \Tinderbox\Clickhouse\Query\Result|\Tinderbox\Clickhouse\Query\Result[]
      */
     public function get()
     {
         if (! empty($this->async)) {
-            return $this->client->selectAsync($this->toAsyncSqls());
+            return $this->client->read($this->toAsyncSqls());
         } else {
-            return $this->client->select($this->toSql(), [], $this->getFiles());
+            return $this->client->readOne($this->toSql(), [], $this->getFiles());
         }
     }
 
@@ -78,29 +76,11 @@ class Builder extends BaseBuilder
      * @param string $format
      * @param int    $concurrency
      *
-     * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
-     *
      * @return array
      */
     public function insertFiles(array $columns, array $files, string $format = \Tinderbox\Clickhouse\Common\Format::CSV, int $concurrency = 5) : array
     {
-        return $this->client->insertFiles($this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
-    }
-
-    /**
-     * Insert in table data from files.
-     *
-     * @param array  $columns
-     * @param array  $files
-     * @param string $format
-     *
-     * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
-     *
-     * @return array
-     */
-    public function insertFilesAsOne(array $columns, array $files, string $format = \Tinderbox\Clickhouse\Common\Format::CSV) : array
-    {
-        return $this->client->insertFilesAsOne((string) $this->getFrom()->getTable(), $columns, $files, $format);
+        return $this->client->writeFiles($this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
     }
 
     /**
@@ -130,7 +110,7 @@ class Builder extends BaseBuilder
             }
         }
 
-        return $this->client->insert(
+        return $this->client->writeOne(
             $this->grammar->compileInsert($this, $values),
             array_flatten($values)
         );
@@ -143,7 +123,7 @@ class Builder extends BaseBuilder
      */
     public function delete()
     {
-        return $this->client->statement(
+        return $this->client->writeOne(
             $this->grammar->compileDelete($this)
         );
     }
