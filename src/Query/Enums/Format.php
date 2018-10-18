@@ -33,4 +33,5 @@ final class Format extends Enum
     public const VALUES = 'Values';
     public const VERTICAL = 'Vertical';
     public const XML = 'XML';
+    public const TSV = 'TSV';
 }

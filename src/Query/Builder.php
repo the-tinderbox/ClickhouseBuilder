@@ -3,6 +3,9 @@
 namespace Tinderbox\ClickhouseBuilder\Query;
 
 use Tinderbox\Clickhouse\Client;
+use Tinderbox\Clickhouse\Common\Format;
+use Tinderbox\Clickhouse\Common\TempTable;
+use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 
 class Builder extends BaseBuilder
 {
@@ -12,7 +15,7 @@ class Builder extends BaseBuilder
      * @var \Tinderbox\Clickhouse\Client
      */
     protected $client;
-
+    
     /**
      * Builder constructor.
      *
@@ -23,7 +26,7 @@ class Builder extends BaseBuilder
         $this->client = $client;
         $this->grammar = new Grammar();
     }
-
+    
     /**
      * Perform compiled from builder sql query and getting result.
      *
@@ -31,13 +34,13 @@ class Builder extends BaseBuilder
      */
     public function get()
     {
-        if (! empty($this->async)) {
+        if (!empty($this->async)) {
             return $this->client->read($this->toAsyncSqls());
         } else {
             return $this->client->readOne($this->toSql(), [], $this->getFiles());
         }
     }
-
+    
     /**
      * Performs compiled sql for count rows only. May be used for pagination
      * Works only without async queries.
@@ -50,24 +53,24 @@ class Builder extends BaseBuilder
     {
         $builder = $this->getCountQuery($column);
         $result = $builder->get();
-
-        if (! empty($this->groups)) {
+        
+        if (!empty($this->groups)) {
             return count($result);
         } else {
             return $result[0]['count'] ?? 0;
         }
     }
-
+    
     /**
      * Makes clean instance of builder.
      *
      * @return self
      */
-    public function newQuery() : self
+    public function newQuery(): self
     {
         return new static($this->client);
     }
-
+    
     /**
      * Insert in table data from files.
      *
@@ -78,11 +81,15 @@ class Builder extends BaseBuilder
      *
      * @return array
      */
-    public function insertFiles(array $columns, array $files, string $format = \Tinderbox\Clickhouse\Common\Format::CSV, int $concurrency = 5) : array
+    public function insertFiles(array $columns, array $files, string $format = Format::CSV, int $concurrency = 5): array
     {
-        return $this->client->writeFiles($this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
+        foreach ($files as $i => $file) {
+            $files[$i] = $this->prepareFile($file);
+        }
+        
+        return $this->client->writeFiles($this->getFrom()->getTable(), $columns, $files, $format, [], $concurrency);
     }
-
+    
     /**
      * Performs insert query.
      *
@@ -95,8 +102,8 @@ class Builder extends BaseBuilder
         if (empty($values)) {
             return false;
         }
-
-        if (! is_array(reset($values))) {
+        
+        if (!is_array(reset($values))) {
             $values = [$values];
         } /*
          * Here, we will sort the insert keys for every record so that each insert is
@@ -109,13 +116,13 @@ class Builder extends BaseBuilder
                 $values[$key] = $value;
             }
         }
-
+        
         return $this->client->writeOne(
             $this->grammar->compileInsert($this, $values),
             array_flatten($values)
         );
     }
-
+    
     /**
      * Performs ALTER TABLE `table` DELETE query.
      *
@@ -126,5 +133,42 @@ class Builder extends BaseBuilder
         return $this->client->writeOne(
             $this->grammar->compileDelete($this)
         );
+    }
+    
+    /**
+     * Creates table with memory engine if table does not exists and inserts provided data into table
+     *
+     * @param string|Identifier $tableName
+     * @param                   $data
+     * @param null              $columns
+     * @param string            $format
+     *
+     * @return bool
+     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
+     */
+    public function insertIntoMemory($tableName, $data, $columns = null, string $format = Format::CSV): bool
+    {
+        $data = $this->prepareFile($data);
+        
+        if (is_null($columns) && $data instanceof TempTable) {
+            $columns = $data->getStructure();
+        }
+        
+        if (is_null($columns)) {
+            throw BuilderException::noTableStructureProvided();
+        }
+        
+        $insertQuery = $this->newQuery()->table($tableName)->format($format);
+        
+        $result = $this->client->write(
+            [
+                ['query' => $this->grammar->compileDropTable($tableName)],
+                ['query' => $this->grammar->compileCreateMemoryTable($tableName, $columns)],
+                ['query' => $this->grammar->compileInsert($insertQuery, array_keys($columns)), 'files' => [$data]],
+            ],
+            1
+        );
+        
+        return $result[0] && $result[1];
     }
 }

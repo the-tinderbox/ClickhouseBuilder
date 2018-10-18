@@ -26,11 +26,6 @@ class From
     private $final;
 
     /**
-     * @var string|null
-     */
-    private $cluster;
-
-    /**
      * BaseBuilder is needed to pass bindings in main query.
      *
      * @var BaseBuilder
@@ -98,20 +93,6 @@ class From
     public function final(bool $isFinal = true) : self
     {
         $this->final = $isFinal;
-
-        return $this;
-    }
-
-    /**
-     * Set cluster name for table.
-     *
-     * @param string $clusterName
-     *
-     * @return From
-     */
-    public function cluster(string $clusterName) : self
-    {
-        $this->cluster = $clusterName;
 
         return $this;
     }
@@ -234,15 +215,5 @@ class From
     public function getSubQuery() : ?BaseBuilder
     {
         return $this->subQuery;
-    }
-
-    /**
-     * Get cluster name.
-     *
-     * @return null|string
-     */
-    public function getCluster() : ?string
-    {
-        return $this->cluster;
     }
 }

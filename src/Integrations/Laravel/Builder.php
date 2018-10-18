@@ -4,6 +4,8 @@ namespace Tinderbox\ClickhouseBuilder\Integrations\Laravel;
 
 use Illuminate\Support\Traits\Macroable;
 use Tinderbox\Clickhouse\Common\Format;
+use Tinderbox\Clickhouse\Common\TempTable;
+use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\BaseBuilder;
 use Tinderbox\ClickhouseBuilder\Query\Grammar;
 
@@ -97,11 +99,9 @@ class Builder extends BaseBuilder
      * @param string $format
      * @param int    $concurrency
      *
-     * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
-     *
      * @return array
      */
-    public function insertFiles(array $columns, array $files, string $format = Format::CSV, int $concurrency = 5) : array
+    public function insertFiles(array $columns, array $files, string $format = Format::CSV, int $concurrency = 5): array
     {
         return $this->connection->insertFiles((string)$this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
     }
@@ -147,5 +147,38 @@ class Builder extends BaseBuilder
     public function delete()
     {
         return $this->connection->delete($this->grammar->compileDelete($this));
+    }
+    
+    /**
+     * Creates table with memory engine if table does not exists and inserts provided data into table
+     *
+     * @param string $tableName
+     * @param        $data
+     * @param null   $columns
+     * @param string $format
+     *
+     * @return bool
+     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
+     */
+    public function insertIntoMemory(string $tableName, $data, $columns = null, string $format = Format::CSV) : bool
+    {
+        $data = $this->prepareFile($data);
+        
+        if (is_null($columns) && $data instanceof TempTable) {
+            $columns = array_keys($data->getStructure());
+        }
+        
+        if (is_null($columns)) {
+            throw BuilderException::noTableStructureProvided();
+        }
+        
+        $insertQuery = $this->newQuery()->table($tableName)->format($format);
+        
+        $result = $this->connection->getClient()->write([
+            ['query' => $this->grammar->compileCreateMemoryTable($tableName, $columns)],
+            ['query' => $this->grammar->compileInsert($insertQuery, $columns), 'files' => [$data]],
+        ], 1);
+        
+        return $result[0] && $result[1];
     }
 }

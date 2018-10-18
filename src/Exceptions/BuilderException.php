@@ -13,4 +13,14 @@ class BuilderException extends Exception
     {
         return new static("Temporary table {$tableName} already exists in query");
     }
+    
+    public static function noTableStructureProvided()
+    {
+        return new static("No structure provided for insert in memory table");
+    }
+    
+    public static function couldNotInstantiateFile()
+    {
+        return new static("Could not instantiate file");
+    }
 }

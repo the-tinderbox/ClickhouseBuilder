@@ -6,12 +6,18 @@ use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery as m;
 use PHPUnit\Framework\TestCase;
 use Tinderbox\Clickhouse\Client;
+use Tinderbox\Clickhouse\Common\File;
+use Tinderbox\Clickhouse\Common\FileFromString;
 use Tinderbox\Clickhouse\Common\Format;
+use Tinderbox\Clickhouse\Common\TempTable;
+use Tinderbox\Clickhouse\Server;
+use Tinderbox\Clickhouse\ServerProvider;
 use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\Builder;
 use Tinderbox\ClickhouseBuilder\Query\Column;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Operator;
 use Tinderbox\ClickhouseBuilder\Query\From;
+use Tinderbox\ClickhouseBuilder\Query\Identifier;
 use Tinderbox\ClickhouseBuilder\Query\JoinClause;
 use Tinderbox\ClickhouseBuilder\Query\TwoElementsLogicExpression;
 
@@ -800,24 +806,49 @@ class BuilderTest extends TestCase
         $builder->unionAll('a');
     }
 
-    public function test_get_and_async_get()
+    public function test_readOne_and_read()
     {
-        $client = m::mock(Client::class);
-        $client->shouldReceive('readOne')->with('SELECT * FROM `table`', [], []);
+        $server = new Server('127.0.0.1');
+        $client = new Client((new ServerProvider())->addServer($server));
+        
+        $client->write([
+            ['query' => 'drop table if exists default.builder_test'],
+            ['query' => 'create table if not exists default.builder_test (number UInt64) engine = Memory'],
+        ], 1);
+        
         $builder = new Builder($client);
-        $builder->from('table')->get();
-
-        $client = m::mock(Client::class);
-        $client->shouldReceive('read')->with([
-            ['query' => 'SELECT * FROM `table1`'], ['query' => 'SELECT * FROM `table2`'],
-        ], 5);
+        $result = $builder
+            ->table('system.tables')
+            ->where('database', '=', 'default')
+            ->where('name', '=','builder_test')->get();
+        
+        $this->assertEquals(1, count($result->rows), 'Correctly returns result of query');
+    
+        $client->write([
+            ['query' => 'drop table if exists default.builder_test'],
+            ['query' => 'drop table if exists default.builder_test2'],
+            ['query' => 'create table if not exists default.builder_test (number UInt64) engine = Memory'],
+            ['query' => 'create table if not exists default.builder_test2 (number UInt64) engine = Memory'],
+        ], 1);
+        
         $builder = new Builder($client);
-
-        $builder->from('table1')->asyncWithQuery(function ($builder) {
-            $builder->from('table2');
-        })->get();
-
-        $builder = $this->getBuilder()->from('table1')->asyncWithQuery(null);
+        
+        $result = $builder
+            ->table('system.tables')
+            ->where('database', '=', 'default')
+            ->where('name', '=','builder_test')
+            ->asyncWithQuery(function($builder) {
+                $builder
+                    ->table('system.tables')
+                    ->where('database', '=', 'default')
+                    ->where('name', '=','builder_test2');
+            })->get();
+    
+        $this->assertTrue(count($result[0]->rows) && count($result[0]->rows), 'Correctly returns result of query');
+    
+        $client->write([
+            ['query' => 'drop table if exists default.builder_test'],
+        ], 1);
 
         $this->expectException(\InvalidArgumentException::class);
 
@@ -826,57 +857,164 @@ class BuilderTest extends TestCase
 
     public function test_insert()
     {
-        $client = m::mock(Client::class);
-        $client->shouldReceive('insert')->with('INSERT INTO `table` (`column1`, `column2`) FORMAT Values (?, ?), (?, ?)', ['value1', 'value2', 'value3', 'value4']);
+        $server = new Server('127.0.0.1');
+        $client = new Client((new ServerProvider())->addServer($server));
+    
+        $client->write([
+            ['query' => 'drop table if exists default.builder_test'],
+            ['query' => 'create table if not exists default.builder_test (number UInt64, string String) engine = Memory'],
+        ], 1);
+        
         $builder = new Builder($client);
 
-        $builder->table('table')->insert([[
-            'column1' => 'value1',
-            'column2' => 'value2',
+        $builder->table('builder_test')->insert([[
+            'number' => 1,
+            'string' => 'value1',
         ], [
-            'column1' => 'value3',
-            'column2' => 'value4',
+            'number' => 2,
+            'string' => 'value2',
         ]]);
-
-        $client = m::mock(Client::class);
-        $client->shouldReceive('insert')->with('INSERT INTO `table` FORMAT Values (?, ?), (?, ?)', ['value1', 'value2', 'value3', 'value4']);
+        
+        $result = $builder->table('builder_test')->orderBy('number')->get();
+        
+        $this->assertTrue($result->rows[0]['number'] == 1 && $result->rows[1]['number'] == 2, 'Correctly inserts data into table with values format and specified columns');
+    
+        $client->write([
+            ['query' => 'drop table if exists default.builder_test'],
+            ['query' => 'create table if not exists default.builder_test (number UInt64, string String) engine = Memory'],
+        ], 1);
+    
         $builder = new Builder($client);
-
-        $builder->table('table')->insert([[
-            'value1',
-            'value2',
-        ], [
-            'value3',
-            'value4',
-        ]]);
-
-        $client = m::mock(Client::class);
-        $client->shouldReceive('insert')->with('INSERT INTO `table` FORMAT Values (?, ?)', ['value1', 'value2']);
-        $builder = new Builder($client);
-
-        $builder->table('table')->insert(['value1', 'value2']);
-
-        $client = m::mock(Client::class);
-        $client->shouldReceive('insert')->with('INSERT INTO `table` (`column1`, `column2`) FORMAT Values (?, ?)', ['value1', 'value2']);
-        $builder = new Builder($client);
-
-        $builder->table('table')->insert([
-            'column1' => 'value1',
-            'column2' => 'value2',
+    
+        $builder->table('builder_test')->insert([
+            [1, 'value1'], [2, 'value2']
         ]);
+    
+        $result = $builder->table('builder_test')->orderBy('number')->get();
+    
+        $this->assertTrue($result->rows[0]['number'] == 1 && $result->rows[1]['number'] == 2, 'Correctly inserts data into table with values format without columns');
+    
+        $client->write([
+            ['query' => 'drop table if exists default.builder_test'],
+            ['query' => 'create table if not exists default.builder_test (number UInt64, string String) engine = Memory'],
+        ], 1);
+    
+        $builder = new Builder($client);
+    
+        $builder->table('builder_test')->insert([1, 'value1']);
+    
+        $result = $builder->table('builder_test')->orderBy('number')->get();
+    
+        $this->assertTrue($result->rows[0]['number'] == 1, 'Correctly inserts data into table with values format and one row');
+    
+        $client->write([
+            ['query' => 'drop table if exists default.builder_test'],
+            ['query' => 'create table if not exists default.builder_test (number UInt64, string String) engine = Memory'],
+        ], 1);
+    
+        $builder = new Builder($client);
+    
+        $builder->table('builder_test')->insert(['number' => 1, 'string' => 'value1']);
+    
+        $result = $builder->table('builder_test')->orderBy('number')->get();
+    
+        $this->assertTrue($result->rows[0]['number'] == 1, 'Correctly inserts data into table with values format and one row with columns');
 
-        $this->assertFalse($builder->table('table')->insert([]));
+        $this->assertFalse($builder->table('table')->insert([]), 'Fails to insert empty dataset');
+    }
+    
+    protected function putInTempFile(string $content) : string
+    {
+        $fileName = tempnam(sys_get_temp_dir(), 'builder_');
+        file_put_contents($fileName, $content);
+        
+        return $fileName;
     }
 
     public function test_insert_files()
     {
-        $client = m::mock(Client::class);
-        $client->shouldReceive('insertFiles')
-            ->with('table', ['column1', 'column2'], ['file1', 'file2'], \Tinderbox\Clickhouse\Common\Format::CSV, 5)
-            ->andReturn([]);
+        $server = new Server('127.0.0.1');
+        $client = new Client((new ServerProvider())->addServer($server));
+        
+        $client->write([
+            ['query' => 'drop table if exists default.builder_test'],
+            ['query' => 'create table if not exists default.builder_test (number UInt64, string String) engine = Memory'],
+        ], 1);
+        
+        $realFiles = [
+            $this->putInTempFile('5'.PHP_EOL.'6'.PHP_EOL),
+            $this->putInTempFile('7'.PHP_EOL.'8'.PHP_EOL),
+            $this->putInTempFile('9'.PHP_EOL.'10'.PHP_EOL),
+        ];
+        
+        $files = [
+            '1'.PHP_EOL.'2'.PHP_EOL,
+            new FileFromString('3'.PHP_EOL.'4'.PHP_EOL),
+            new File($realFiles[0]),
+            new TempTable('test', new File($realFiles[1]), ['number' => 'UInt64']),
+            $realFiles[2]
+        ];
+    
         $builder = new Builder($client);
-
-        $builder->table('table')->insertFiles(['column1', 'column2'], ['file1', 'file2']);
+        $builder->table('builder_test')->insertFiles(['number'], $files, Format::TSV, 5);
+    
+        $builder = new Builder($client);
+        $result = $builder->table('builder_test')->orderBy('number')->get();
+        
+        $this->assertEquals(10, count($result->rows), 'Correctly inserts all types of files');
+        
+        $this->expectException(BuilderException::class);
+        $this->expectExceptionMessage('Could not instantiate file');
+    
+        $builder = new Builder($client);
+        $builder->table('builder_test')->insertFiles(['number'], [new \Exception('test')], Format::TSV, 5);
+    }
+    
+    public function testInsertIntoMemory()
+    {
+        $server = new Server('127.0.0.1');
+        $client = new Client((new ServerProvider())->addServer($server));
+    
+        $realFiles = [
+            $this->putInTempFile('5'.PHP_EOL.'6'.PHP_EOL),
+            $this->putInTempFile('7'.PHP_EOL.'8'.PHP_EOL),
+            $this->putInTempFile('9'.PHP_EOL.'10'.PHP_EOL),
+        ];
+    
+        $files = [
+            '1'.PHP_EOL.'2'.PHP_EOL,
+            new FileFromString('3'.PHP_EOL.'4'.PHP_EOL),
+            new File($realFiles[0]),
+            new TempTable('test', new File($realFiles[1]), ['number' => 'UInt64']),
+            $realFiles[2]
+        ];
+        
+        $client->write([
+            ['query' => 'drop table if exists default.builder_test'],
+            ['query' => 'create table if not exists default.builder_test (number UInt64, string String) engine = Memory'],
+        ], 1);
+        
+        foreach ($files as $file) {
+            if (!$file instanceof TempTable) {
+                $structure = ['number' => 'UInt64'];
+            } else {
+                $structure = null;
+            }
+            
+            $builder = new Builder($client);
+            $builder->insertIntoMemory(new Identifier('default.builder_test'), $file, $structure, Format::TSV);
+            
+            $builder = new Builder($client);
+            $result = $builder->table('builder_test')->get();
+            
+            $this->assertEquals(2, count($result->rows));
+        }
+        
+        $this->expectException(BuilderException::class);
+        $this->expectExceptionMessage('No structure provided for insert in memory table');
+    
+        $builder = new Builder($client);
+        $builder->insertIntoMemory(new Identifier('default.builder_test'), '1', null, Format::TSV);
     }
 
     public function testCompileAsyncQueries()
@@ -903,29 +1041,12 @@ class BuilderTest extends TestCase
             $builder3,
         ], $sqls);
     }
-
-    public function testAddFile()
+    
+    public function testOnCluster()
     {
         $builder = $this->getBuilder();
-        $builder->addFile('test.csv', '_data', ['UInt64']);
-
-        $files = $builder->getFiles();
-
-        $this->assertEquals(1, count($files));
-        $this->assertArrayHasKey('_data', $files);
-
-        /* @var \Tinderbox\Clickhouse\Common\TempTable $table */
-        $table = $files['_data'];
-
-        $this->assertEquals('_data', $table->getName());
-        $this->assertEquals('test.csv', $table->getSource());
-        $this->assertEquals(['UInt64'], $table->getStructure());
-        $this->assertEquals(Format::CSV, $table->getFormat());
-
-        $e = BuilderException::temporaryTableAlreadyExists('_data');
-        $this->expectException(BuilderException::class);
-        $this->expectExceptionMessage($e->getMessage());
-
-        $builder->addFile('test.csv', '_data', ['UInt64']);
+        $builder->onCluster('test');
+        
+        $this->assertEquals('test', $builder->getOnCluster(), 'Can execute query on cluster');
     }
 }

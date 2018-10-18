@@ -3,7 +3,8 @@
 namespace Tinderbox\ClickhouseBuilder\Query;
 
 use Closure;
-use Tinderbox\Clickhouse\Common\TempTable;
+use Tinderbox\Clickhouse\Common\File;
+use Tinderbox\Clickhouse\Common\FileFromString;
 use Tinderbox\Clickhouse\Interfaces\FileInterface;
 use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
@@ -132,6 +133,13 @@ abstract class BaseBuilder
      * @var array
      */
     protected $files = [];
+    
+    /**
+     * Cluster name
+     *
+     * @var string
+     */
+    protected $onCluster;
     
     /**
      * Set columns for select statement.
@@ -425,7 +433,7 @@ abstract class BaseBuilder
      */
     public function onCluster(string $clusterName)
     {
-        $this->from->cluster($clusterName);
+        $this->onCluster = $clusterName;
         
         return $this;
     }
@@ -1661,10 +1669,6 @@ abstract class BaseBuilder
     {
         $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
         
-        if (empty($columns)) {
-            $columns[] = '*';
-        }
-        
         $this->groups = $this->processColumns($columns, false);
         
         return $this;
@@ -1680,10 +1684,6 @@ abstract class BaseBuilder
     public function addGroupBy(...$columns)
     {
         $columns = isset($columns[0]) && is_array($columns[0]) ? $columns[0] : $columns;
-        
-        if (empty($columns)) {
-            $columns[] = '*';
-        }
         
         $this->groups = array_merge($this->groups, $this->processColumns($columns, false));
         
@@ -1851,6 +1851,16 @@ abstract class BaseBuilder
     }
     
     /**
+     * Get cluster name
+     *
+     * @return null|string
+     */
+    public function getOnCluster(): ?string
+    {
+        return $this->onCluster;
+    }
+    
+    /**
      * Get From object.
      *
      * @return From|null
@@ -1931,24 +1941,20 @@ abstract class BaseBuilder
     }
     
     /**
-     * Add file which should be sent on server
+     * Add file with data to query
      *
-     * @param string|FileInterface $filePath
-     * @param string               $tableName
-     * @param array                $structure
-     * @param string|null          $format
+     * @param             $file
+     * @param string|null $key Provide key if you don't want files duplicates
      *
-     * @return static
-     *
-     * @throws BuilderException
+     * @return $this
      */
-    public function addFile($filePath, string $tableName, array $structure, string $format = Format::CSV)
+    public function addFile($file, string $key = null)
     {
-        if (isset($this->files[$tableName])) {
-            throw BuilderException::temporaryTableAlreadyExists($tableName);
+        if (!is_null($key)){
+            $this->files[$key] = $this->prepareFile($file);
+        } else {
+            $this->files[] = $this->prepareFile($file);
         }
-        
-        $this->files[$tableName] = new TempTable($tableName, $filePath, $structure, $format);
         
         return $this;
     }
@@ -1977,5 +1983,27 @@ abstract class BaseBuilder
         }
         
         return array_merge([$this], $result);
+    }
+    
+    /**
+     * Prepares file
+     *
+     * @param $file
+     *
+     * @return File|FileFromString
+     */
+    protected function prepareFile($file)
+    {
+        if (is_string($file) && is_file($file)) {
+            $file = new File($file);
+        } elseif (is_scalar($file)) {
+            $file = new FileFromString($file);
+        }
+        
+        if (!$file instanceof FileInterface) {
+            throw BuilderException::couldNotInstantiateFile();
+        }
+        
+        return $file;
     }
 }

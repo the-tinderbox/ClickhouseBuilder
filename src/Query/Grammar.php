@@ -109,34 +109,74 @@ class Grammar
         if (is_null($table)) {
             throw GrammarException::missedTableForInsert();
         }
-
-        $columns = array_map(function ($col) {
-            return is_string($col) ? new Identifier($col) : null;
-        }, array_keys($values[0]));
-
-        $columns = array_filter($columns);
+    
+        $format = $query->getFormat() ?? Format::VALUES;
+        
+        if ($format == Format::VALUES) {
+            $columns = array_map(function ($col) {
+                return is_string($col) ? new Identifier($col) : null;
+            }, array_keys($values[0]));
+    
+            $columns = array_filter($columns);
+        } else {
+            $columns = array_map(function ($col) {
+                return is_string($col) ? new Identifier($col) : null;
+            }, $values);
+        }
 
         $columns = $this->compileTuple(new Tuple($columns));
 
         $result[] = "INSERT INTO {$table}";
 
-        if (! is_null($query->getFrom()->getCluster())) {
-            $result[] = "ON CLUSTER {$query->getFrom()->getCluster()}";
-        }
-
         if ($columns !== '') {
             $result[] = "({$columns})";
         }
-
-        $result[] = 'FORMAT ' . ($query->getFormat() ?? Format::VALUES);
-
-        $result[] = implode(', ', array_map(function ($value) {
+        
+        $result[] = 'FORMAT ' . $format;
+        
+        if ($format == Format::VALUES) {
+            $result[] = $this->compileInsertValues($values);
+        }
+        
+        return implode(' ', $result);
+    }
+    
+    public function compileCreateMemoryTable($tableName, $structure) : string
+    {
+        if ($tableName instanceof Identifier) {
+            $tableName = (string)$tableName;
+        }
+        
+        return "CREATE TABLE IF NOT EXISTS {$tableName} ({$this->compileTableStructure($structure)}) ENGINE = Memory";
+    }
+    
+    public function compileDropTable($tableName) : string
+    {
+        if ($tableName instanceof Identifier) {
+            $tableName = (string)$tableName;
+        }
+        
+        return "DROP TABLE IF EXISTS {$tableName}";
+    }
+    
+    public function compileTableStructure(array $structure) : string
+    {
+        $result = [];
+        
+        foreach ($structure as $column => $type) {
+            $result[] = $column.' '.$type;
+        }
+        
+        return implode(', ', $result);
+    }
+    
+    public function compileInsertValues($values)
+    {
+        return implode(', ', array_map(function ($value) {
             return '(' . implode(', ', array_map(function () {
                     return '?';
                 }, $value)) . ')';
         }, $values));
-
-        return implode(' ', $result);
     }
 
     /**
@@ -153,8 +193,8 @@ class Grammar
 
         $sql = "ALTER TABLE {$this->wrap($query->getFrom()->getTable())}";
 
-        if (! is_null($query->getFrom()->getCluster())) {
-            $sql .= " ON CLUSTER {$query->getFrom()->getCluster()}";
+        if (! is_null($query->getOnCluster())) {
+            $sql .= " ON CLUSTER {$query->getOnCluster()}";
         }
 
         $sql .= ' DELETE';
