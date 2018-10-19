@@ -141,22 +141,22 @@ class Grammar
         return implode(' ', $result);
     }
     
-    public function compileCreateMemoryTable($tableName, $structure) : string
+    public function compileCreateTable($tableName, string $engine, array $structure, $ifNotExists = false) : string
     {
         if ($tableName instanceof Identifier) {
             $tableName = (string)$tableName;
         }
         
-        return "CREATE TABLE IF NOT EXISTS {$tableName} ({$this->compileTableStructure($structure)}) ENGINE = Memory";
+        return "CREATE TABLE ".($ifNotExists ? "IF NOT EXISTS " : "")."{$tableName} ({$this->compileTableStructure($structure)}) ENGINE = {$engine}";
     }
     
-    public function compileDropTable($tableName) : string
+    public function compileDropTable($tableName, $ifExists = false) : string
     {
         if ($tableName instanceof Identifier) {
             $tableName = (string)$tableName;
         }
         
-        return "DROP TABLE IF EXISTS {$tableName}";
+        return "DROP TABLE ".($ifExists ? "IF EXISTS " : "")."{$tableName}";
     }
     
     public function compileTableStructure(array $structure) : string

@@ -140,6 +140,13 @@ abstract class BaseBuilder
      * @var string
      */
     protected $onCluster;
+
+    /**
+     * File representing values which should be inserted in table
+     *
+     * @var FileInterface
+     */
+    protected $values;
     
     /**
      * Set columns for select statement.
@@ -1958,6 +1965,16 @@ abstract class BaseBuilder
         
         return $this;
     }
+
+    public function values($values)
+    {
+        $this->values = $this->prepareFile($values);
+    }
+
+    public function getValues() : FileInterface
+    {
+        return $this->values;
+    }
     
     /**
      * Returns files which should be sent on server
@@ -1984,7 +2001,7 @@ abstract class BaseBuilder
         
         return array_merge([$this], $result);
     }
-    
+
     /**
      * Prepares file
      *
@@ -1992,18 +2009,14 @@ abstract class BaseBuilder
      *
      * @return File|FileFromString
      */
-    protected function prepareFile($file)
+    protected function prepareFile($file) : FileInterface
     {
-        if (is_string($file) && is_file($file)) {
-            $file = new File($file);
-        } elseif (is_scalar($file)) {
-            $file = new FileFromString($file);
-        }
-        
+        $file = file_from($file);
+
         if (!$file instanceof FileInterface) {
             throw BuilderException::couldNotInstantiateFile();
         }
-        
+
         return $file;
     }
 }

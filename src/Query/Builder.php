@@ -89,6 +89,24 @@ class Builder extends BaseBuilder
         
         return $this->client->writeFiles($this->getFrom()->getTable(), $columns, $files, $format, [], $concurrency);
     }
+
+    /**
+     * Insert in table data from files.
+     *
+     * @param array                                                 $columns
+     * @param string|\Tinderbox\Clickhouse\Interfaces\FileInterface $file
+     * @param string                                                $format
+     *
+     * @return bool
+     */
+    public function insertFile(array $columns, $file, string $format = Format::CSV): bool
+    {
+        $file = $this->prepareFile($file);
+
+        $result = $this->client->writeFiles($this->getFrom()->getTable(), $columns, [$file], $format);
+
+        return $result[0][0];
+    }
     
     /**
      * Performs insert query.
@@ -134,41 +152,42 @@ class Builder extends BaseBuilder
             $this->grammar->compileDelete($this)
         );
     }
-    
+
     /**
-     * Creates table with memory engine if table does not exists and inserts provided data into table
+     * Executes query to create table
      *
-     * @param string|Identifier $tableName
-     * @param                   $data
-     * @param null              $columns
-     * @param string            $format
+     * @param        $tableName
+     * @param string $engine
+     * @param array  $structure
      *
      * @return bool
-     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
      */
-    public function insertIntoMemory($tableName, $data, $columns = null, string $format = Format::CSV): bool
+    public function createTable($tableName, string $engine, array $structure)
     {
-        $data = $this->prepareFile($data);
-        
-        if (is_null($columns) && $data instanceof TempTable) {
-            $columns = $data->getStructure();
-        }
-        
-        if (is_null($columns)) {
-            throw BuilderException::noTableStructureProvided();
-        }
-        
-        $insertQuery = $this->newQuery()->table($tableName)->format($format);
-        
-        $result = $this->client->write(
-            [
-                ['query' => $this->grammar->compileDropTable($tableName)],
-                ['query' => $this->grammar->compileCreateMemoryTable($tableName, $columns)],
-                ['query' => $this->grammar->compileInsert($insertQuery, array_keys($columns)), 'files' => [$data]],
-            ],
-            1
-        );
-        
-        return $result[0] && $result[1];
+        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure));
+    }
+
+    /**
+     * Executes query to create table if table does not exists
+     *
+     * @param        $tableName
+     * @param string $engine
+     * @param array  $structure
+     *
+     * @return bool
+     */
+    public function createTableIfNotExists($tableName, string $engine, array $structure)
+    {
+        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, true));
+    }
+
+    public function dropTable($tableName)
+    {
+        return $this->client->writeOne($this->grammar->compileDropTable($tableName));
+    }
+
+    public function dropTableIfExists($tableName)
+    {
+        return $this->client->writeOne($this->grammar->compileDropTable($tableName, true));
     }
 }

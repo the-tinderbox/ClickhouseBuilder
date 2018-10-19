@@ -969,53 +969,6 @@ class BuilderTest extends TestCase
         $builder = new Builder($client);
         $builder->table('builder_test')->insertFiles(['number'], [new \Exception('test')], Format::TSV, 5);
     }
-    
-    public function testInsertIntoMemory()
-    {
-        $server = new Server('127.0.0.1');
-        $client = new Client((new ServerProvider())->addServer($server));
-    
-        $realFiles = [
-            $this->putInTempFile('5'.PHP_EOL.'6'.PHP_EOL),
-            $this->putInTempFile('7'.PHP_EOL.'8'.PHP_EOL),
-            $this->putInTempFile('9'.PHP_EOL.'10'.PHP_EOL),
-        ];
-    
-        $files = [
-            '1'.PHP_EOL.'2'.PHP_EOL,
-            new FileFromString('3'.PHP_EOL.'4'.PHP_EOL),
-            new File($realFiles[0]),
-            new TempTable('test', new File($realFiles[1]), ['number' => 'UInt64']),
-            $realFiles[2]
-        ];
-        
-        $client->write([
-            ['query' => 'drop table if exists default.builder_test'],
-            ['query' => 'create table if not exists default.builder_test (number UInt64, string String) engine = Memory'],
-        ], 1);
-        
-        foreach ($files as $file) {
-            if (!$file instanceof TempTable) {
-                $structure = ['number' => 'UInt64'];
-            } else {
-                $structure = null;
-            }
-            
-            $builder = new Builder($client);
-            $builder->insertIntoMemory(new Identifier('default.builder_test'), $file, $structure, Format::TSV);
-            
-            $builder = new Builder($client);
-            $result = $builder->table('builder_test')->get();
-            
-            $this->assertEquals(2, count($result->rows));
-        }
-        
-        $this->expectException(BuilderException::class);
-        $this->expectExceptionMessage('No structure provided for insert in memory table');
-    
-        $builder = new Builder($client);
-        $builder->insertIntoMemory(new Identifier('default.builder_test'), '1', null, Format::TSV);
-    }
 
     public function testCompileAsyncQueries()
     {
