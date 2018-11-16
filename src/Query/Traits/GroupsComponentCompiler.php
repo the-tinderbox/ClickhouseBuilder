@@ -17,14 +17,14 @@ trait GroupsComponentCompiler
      */
     private function compileGroupsComponent(Builder $builder, array $columns) : string
     {
-        $columns = array_reduce($columns, function ($columns, $column) {
-            $columns[] = $this->compileColumn($column);
-
-            return $columns;
-        }, []);
-
-        if (!empty($columns) && !in_array('*', $columns, true)) {
-            return 'GROUP BY '.implode(', ', $columns);
+        $compiledColumns = [];
+        
+        foreach ($columns as $column) {
+            $compiledColumns[] = $this->compileColumn($column);
+        }
+        
+        if (!empty($compiledColumns) && !in_array('*', $compiledColumns, true)) {
+            return 'GROUP BY '.implode(', ', $compiledColumns);
         } else {
             return '';
         }

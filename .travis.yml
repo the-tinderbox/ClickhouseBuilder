@@ -9,12 +9,13 @@ before_install:
 before_script:
   - composer self-update
   - composer install --prefer-source --dev
+  - docker run -p 9000:9000 -p 8123:8123 -d --name some-clickhouse-server --ulimit nofile=262144:262144 yandex/clickhouse-server
 
 script: phpunit --coverage-clover ./tests/logs/clover.xml
 
 after_script:
- - php vendor/bin/coveralls -v
+  - php vendor/bin/php-coveralls -v
 
 notifications:
-    on_success: never
-    on_failure: always
+  on_success: never
+  on_failure: always

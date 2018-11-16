@@ -175,7 +175,7 @@ abstract class BaseBuilder
      *
      * @return static
      */
-    public function getCountQuery($column = '*')
+    public function getCountQuery()
     {
         $without = ['columns' => [], 'limit' => null];
         
@@ -183,7 +183,7 @@ abstract class BaseBuilder
             $without['orders'] = [];
         }
         
-        $builder = $this->cloneWithout($without)->select(raw('count('.$column.') as `count`'));
+        $builder = $this->cloneWithout($without)->select(raw('count() as `count`'));
         
         return $builder;
     }
@@ -2012,10 +2012,6 @@ abstract class BaseBuilder
     protected function prepareFile($file) : FileInterface
     {
         $file = file_from($file);
-
-        if (!$file instanceof FileInterface) {
-            throw BuilderException::couldNotInstantiateFile();
-        }
 
         return $file;
     }

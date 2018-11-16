@@ -662,11 +662,11 @@ class BuilderTest extends TestCase
 
     public function test_count()
     {
-        $builder = $this->getBuilder()->from('table')->select('column1', 'column2', 'column3')->orderBy('column1')->limit(10)->getCountQuery('*');
-        $this->assertEquals('SELECT count(*) as `count` FROM `table`', $builder->toSql());
+        $builder = $this->getBuilder()->from('table')->select('column1', 'column2', 'column3')->orderBy('column1')->limit(10)->getCountQuery();
+        $this->assertEquals('SELECT count() as `count` FROM `table`', $builder->toSql());
 
-        $builder = $this->getBuilder()->from('table')->select('column1', 'column2', 'column3')->groupBy('column2')->orderBy('column1')->limit(10)->getCountQuery('*');
-        $this->assertEquals('SELECT count(*) as `count` FROM `table` GROUP BY `column2` ORDER BY `column1` ASC', $builder->toSql());
+        $builder = $this->getBuilder()->from('table')->select('column1', 'column2', 'column3')->groupBy('column2')->orderBy('column1')->limit(10)->getCountQuery();
+        $this->assertEquals('SELECT count() as `count` FROM `table` GROUP BY `column2` ORDER BY `column1` ASC', $builder->toSql());
     }
 
     public function test_group_by()
@@ -845,10 +845,19 @@ class BuilderTest extends TestCase
             })->get();
     
         $this->assertTrue(count($result[0]->rows) && count($result[0]->rows), 'Correctly returns result of query');
-    
+        
         $client->write([
             ['query' => 'drop table if exists default.builder_test'],
         ], 1);
+    
+        $query = $builder->newQuery()->from(raw('numbers(0,10)'));
+        $query->asyncWithQuery()->table(raw('numbers(10,10)'));
+        
+        $result = $query->get();
+    
+        $this->assertEquals(2, count($result));
+        $this->assertEquals(['0','1','2','3','4','5','6','7','8','9'], array_column($result[0]->rows, 'number'));
+        $this->assertEquals(['10','11','12','13','14','15','16','17','18','19'], array_column($result[1]->rows, 'number'));
 
         $this->expectException(\InvalidArgumentException::class);
 
@@ -963,8 +972,7 @@ class BuilderTest extends TestCase
         
         $this->assertEquals(10, count($result->rows), 'Correctly inserts all types of files');
         
-        $this->expectException(BuilderException::class);
-        $this->expectExceptionMessage('Could not instantiate file');
+        $this->expectException(\TypeError::class);
     
         $builder = new Builder($client);
         $builder->table('builder_test')->insertFiles(['number'], [new \Exception('test')], Format::TSV, 5);
@@ -995,11 +1003,85 @@ class BuilderTest extends TestCase
         ], $sqls);
     }
     
+    protected function createBuilder()
+    {
+        $serverProvider = new ServerProvider();
+        $serverProvider->addServer(new Server('localhost', 8123, 'default'));
+        $client = new Client($serverProvider);
+        
+        return new Builder($client);
+    }
+    
+    public function testDelete()
+    {
+        $builder = $this->createBuilder();
+        $builder->dropTableIfExists('test');
+        $builder->createTable('test', 'MergeTree order by number', [
+            'number' => 'UInt64'
+        ]);
+        
+        $builder->newQuery()->table('test')->insertFile(['number'],  new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2'));
+    
+        /*
+         * We have to sleep for 3 seconds while mutation in progress
+         */
+        sleep(3);
+    
+        $builder->newQuery()->table('test')->where('number', '=', 1)->delete();
+    
+        $result = $builder->newQuery()->table('test')->count();
+    
+        $this->assertEquals(2, $result);
+    }
+    
+    public function testDropTable()
+    {
+        $builder = $this->createBuilder();
+        $builder->dropTableIfExists('test');
+        $builder->createTable('test', 'MergeTree order by number', [
+            'number' => 'UInt64'
+        ]);
+        $builder->dropTable('test');
+        
+        $result = $builder->newQuery()->table('system.tables')->where('name', '=', 'test')->count();
+        
+        $this->assertEquals(0, $result);
+    }
+    
+    public function testCount()
+    {
+        $result = $this->createBuilder()->table(raw('numbers(0,10)'))->count();
+    
+        $this->assertEquals(10, $result);
+    
+        $result = $this->createBuilder()->newQuery()->table(raw('numbers(0,10)'))->groupBy(raw('number % 2'))->count();
+    
+        $this->assertEquals(2, $result);
+    }
+    
     public function testOnCluster()
     {
         $builder = $this->getBuilder();
         $builder->onCluster('test');
         
         $this->assertEquals('test', $builder->getOnCluster(), 'Can execute query on cluster');
+    }
+    
+    public function testArrayJoin()
+    {
+        $builder = $this->getBuilder();
+        $builder->table('test')->arrayJoin('someArr');
+        
+        $this->assertEquals('SELECT * FROM `test` ARRAY JOIN `someArr`', $builder->toSql());
+    }
+    
+    public function testAddFile()
+    {
+        $builder = $this->getBuilder();
+        $builder->addFile(new FileFromString(''));
+        $builder->addFile(new FileFromString(''), 'file_name');
+        
+        $this->assertEquals(2, count($builder->getFiles()));
+        $this->assertArrayHasKey('file_name', $builder->getFiles());
     }
 }

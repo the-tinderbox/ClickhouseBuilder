@@ -1,45 +1,5 @@
 <?php
 
-if (! function_exists('tap')) {
-    /**
-     * Call the given Closure with the given value then return the value.
-     *
-     * @param mixed    $value
-     * @param callable $callback
-     *
-     * @return mixed
-     */
-    function tap($value, $callback)
-    {
-        $callback($value);
-
-        return $value;
-    }
-}
-
-if (! function_exists('array_flatten')) {
-    /**
-     * Flatten a multi-dimensional array into a single level.
-     *
-     * @param array $array
-     * @param int   $depth
-     *
-     * @return array
-     */
-    function array_flatten($array, $depth = INF): array
-    {
-        return array_reduce($array, function ($result, $item) use ($depth) {
-            if (! is_array($item)) {
-                return array_merge($result, [$item]);
-            } elseif ($depth === 1) {
-                return array_merge($result, array_values($item));
-            } else {
-                return array_merge($result, array_flatten($item, $depth - 1));
-            }
-        }, []);
-    }
-}
-
 if (! function_exists('raw')) {
     /**
      * Wrap string into Expression object for inserting in sql query as is.
@@ -91,14 +51,9 @@ if (! function_exists('into_memory_table')) {
         if (is_null($structure)) {
             throw \Tinderbox\ClickhouseBuilder\Exceptions\BuilderException::noTableStructureProvided();
         }
-
-        if (! $builder->newQuery()->dropTableIfExists($tableName)) {
-            throw new \Tinderbox\ClickhouseBuilder\Exceptions\BuilderException("Could not drop table [{$tableName}]");
-        }
-
-        if (! $builder->newQuery()->createTableIfNotExists($tableName, 'Memory', $structure)) {
-            throw new \Tinderbox\ClickhouseBuilder\Exceptions\BuilderException("Could not create table [{$tableName}]");
-        }
+    
+        $builder->newQuery()->dropTableIfExists($tableName);
+        $builder->newQuery()->createTableIfNotExists($tableName, 'Memory', $structure);
 
         $result = $builder->newQuery()->table($tableName)->insertFile(array_keys($structure), $file, $format);
 

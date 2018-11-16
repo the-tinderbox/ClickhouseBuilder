@@ -12,6 +12,7 @@ use Tinderbox\Clickhouse\ServerProvider;
 use Tinderbox\Clickhouse\Transport\HttpTransport;
 use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Exceptions\NotSupportedException;
+use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
 use Tinderbox\ClickhouseBuilder\Query\Expression;
 
 class Connection extends \Illuminate\Database\Connection
@@ -139,20 +140,13 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Creates transport
      *
-     * @param string $transport
      * @param array  $options
      *
      * @return \Tinderbox\Clickhouse\Interfaces\TransportInterface
      */
     protected function createTransport(array $options): TransportInterface
     {
-        $transport = 'http';
-        
-        switch ($transport) {
-            case 'http':
-                return new HttpTransport($options['client'] ?? null, $options['timeout'] ?? 5.0);
-                break;
-        }
+        return new HttpTransport($options['client'] ?? null, $options['timeout'] ?? 5.0);
     }
     
     /**
@@ -280,20 +274,6 @@ class Connection extends \Illuminate\Database\Connection
     }
     
     /**
-     * Set client to the connection.
-     *
-     * @param Client $client
-     *
-     * @return Connection
-     */
-    public function setClient(Client $client): self
-    {
-        $this->client = $client;
-        
-        return $this;
-    }
-    
-    /**
      * Run a select statement against the database.
      *
      * @param string $query
@@ -306,7 +286,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         $result = $this->getClient()->readOne($query, $bindings, $tables);
         
-        $this->logQuery($query, $bindings, $result->getStatistic()->getTime());
+        $this->logQuery($result->getQuery()->getQuery(), [], $result->getStatistic()->getTime());
         
         $this->setLastQueryStatistic($result->getStatistic());
         
@@ -329,7 +309,7 @@ class Connection extends \Illuminate\Database\Connection
         foreach ($results as $i => $result) {
             /* @var \Tinderbox\Clickhouse\Query\Result $result */
             /* @var Query $query */
-            $query = $queries[$i];
+            $query = $result->getQuery();
             
             $this->logQuery($query->getQuery(), [], $result->getStatistic()->getTime());
             
@@ -423,7 +403,7 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @return array
      */
-    public function insertFiles($table, array $columns, array $files, $format = null, $concurrency = 5)
+    public function insertFiles($table, array $columns, array $files, $format = Format::CSV, $concurrency = 5)
     {
         $result = $this->getClient()->writeFiles($table, $columns, $files, $format, [], $concurrency);
         
@@ -468,7 +448,7 @@ class Connection extends \Illuminate\Database\Connection
      */
     public function affectingStatement($query, $bindings = [])
     {
-        throw NotSupportedException::updateAndDelete();
+        throw new NotSupportedException('This type of queries is not supported');
     }
     
     /**
@@ -476,19 +456,13 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @param string $query
      * @param array  $bindings
-     * @param bool   $useReadPdo
+     * @param array $tables
      *
      * @return mixed
      */
-    public function selectOne($query, $bindings = [], $useReadPdo = true)
+    public function selectOne($query, $bindings = [], $tables = [])
     {
-        $start = microtime(true);
-        
-        $result = $this->select($query, $bindings);
-        
-        $this->logQuery($query, $bindings, microtime(true) - $start);
-        
-        return array_shift($result);
+        return $this->select($query, $bindings, $tables);
     }
     
     /**

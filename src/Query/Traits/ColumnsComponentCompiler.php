@@ -19,12 +19,12 @@ trait ColumnsComponentCompiler
      */
     private function compileColumnsComponent(BaseBuilder $builder, array $columns) : string
     {
-        $columns = array_reduce($columns, function ($columns, $column) {
-            $columns[] = $this->compileColumn($column);
+        $compiledColumns = [];
+        
+        foreach ($columns as $column) {
+            $compiledColumns[] = $this->compileColumn($column);
+        }
 
-            return $columns;
-        }, []);
-
-        return implode(', ', $columns);
+        return implode(', ', $compiledColumns);
     }
 }

@@ -118,10 +118,6 @@ class Grammar
             }, array_keys($values[0]));
     
             $columns = array_filter($columns);
-        } else {
-            $columns = array_map(function ($col) {
-                return is_string($col) ? new Identifier($col) : null;
-            }, $values);
         }
 
         $columns = $this->compileTuple(new Tuple($columns));
@@ -141,6 +137,16 @@ class Grammar
         return implode(' ', $result);
     }
     
+    /**
+     * Compiles create table query
+     *
+     * @param        $tableName
+     * @param string $engine
+     * @param array  $structure
+     * @param bool   $ifNotExists
+     *
+     * @return string
+     */
     public function compileCreateTable($tableName, string $engine, array $structure, $ifNotExists = false) : string
     {
         if ($tableName instanceof Identifier) {
@@ -150,6 +156,14 @@ class Grammar
         return "CREATE TABLE ".($ifNotExists ? "IF NOT EXISTS " : "")."{$tableName} ({$this->compileTableStructure($structure)}) ENGINE = {$engine}";
     }
     
+    /**
+     * Compiles drop table query
+     *
+     * @param      $tableName
+     * @param bool $ifExists
+     *
+     * @return string
+     */
     public function compileDropTable($tableName, $ifExists = false) : string
     {
         if ($tableName instanceof Identifier) {
@@ -159,6 +173,13 @@ class Grammar
         return "DROP TABLE ".($ifExists ? "IF EXISTS " : "")."{$tableName}";
     }
     
+    /**
+     * Assembles table structure
+     *
+     * @param array $structure
+     *
+     * @return string
+     */
     public function compileTableStructure(array $structure) : string
     {
         $result = [];

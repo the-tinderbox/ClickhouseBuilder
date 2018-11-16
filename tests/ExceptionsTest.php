@@ -49,7 +49,7 @@ class ExceptionsTest extends TestCase
         $e = NotSupportedException::transactions();
         $this->assertInstanceOf(NotSupportedException::class, $e);
 
-        $e = NotSupportedException::updateAndDelete();
+        $e = NotSupportedException::update();
         $this->assertInstanceOf(NotSupportedException::class, $e);
     }
 }

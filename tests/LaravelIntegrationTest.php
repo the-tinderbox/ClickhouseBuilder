@@ -6,58 +6,70 @@ use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 use Illuminate\Database\DatabaseServiceProvider;
 use Illuminate\Events\EventServiceProvider;
-use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
-use Mockery as m;
 use PHPUnit\Framework\TestCase;
-use Tinderbox\Clickhouse\Client;
-use Tinderbox\Clickhouse\Cluster;
-use Tinderbox\Clickhouse\Common\Format;
-use Tinderbox\Clickhouse\Query\QueryStatistic;
-use Tinderbox\Clickhouse\Query\Result;
-use Tinderbox\Clickhouse\Server;
+use Tinderbox\Clickhouse\Common\FileFromString;
+use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Exceptions\NotSupportedException;
 use Tinderbox\ClickhouseBuilder\Integrations\Laravel\Builder;
 use Tinderbox\ClickhouseBuilder\Integrations\Laravel\ClickhouseServiceProvider;
 use Tinderbox\ClickhouseBuilder\Integrations\Laravel\Connection;
+use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
 use Tinderbox\ClickhouseBuilder\Query\Expression;
 
 class LaravelIntegrationTest extends TestCase
 {
-    use MockeryPHPUnitIntegration;
-
     public function getSimpleConfig()
     {
         return [
-            'host'     => 'localhost',
-            'port'     => 8123,
-            'database' => 'database',
-            'username' => 'default',
-            'password' => '',
-            'options'  => [
-                'timeout'  => 10,
-                'protocol' => 'http',
-            ],
+            'servers' => [
+                [
+                    'host'     => 'localhost',
+                    'port'     => 8123,
+                    'database' => 'default',
+                    'username' => 'default',
+                    'password' => '',
+                    'options'  => [
+                        'timeout'  => 10,
+                        'protocol' => 'http',
+                    ],
+                ]
+            ]
         ];
     }
 
     public function getClusterConfig()
     {
         return [
-            'cluster' => [
-                'server-1' => [
-                    'host'     => 'localhost',
-                    'port'     => 8123,
-                    'database' => 'database',
-                    'username' => 'default',
-                    'password' => '',
-                ],
-                'server2'  => [
-                    'host'     => 'localhost',
-                    'port'     => 8123,
-                    'database' => 'database',
-                    'username' => 'default',
-                    'password' => '',
-                ],
+            'clusters' => [
+                'test' => [
+                    'server-1' => [
+                        'host'     => 'localhost',
+                        'port'     => 8123,
+                        'database' => 'default',
+                        'username' => 'default',
+                        'password' => '',
+                    ],
+                    'server2'  => [
+                        'host'     => 'localhost',
+                        'port'     => 8123,
+                        'database' => 'default',
+                        'username' => 'default',
+                        'password' => '',
+                        'options'=> [
+                            'timeout'=> 10
+                        ]
+                    ],
+                    'server3'  => [
+                        'host'     => 'not_local_host',
+                        'port'     => 8123,
+                        'database' => 'default',
+                        'username' => 'default',
+                        'password' => '',
+                        'options'=> [
+                            'timeout'=> 10
+                        ]
+                    ],
+                ]
             ],
         ];
     }
@@ -98,13 +110,21 @@ class LaravelIntegrationTest extends TestCase
     {
         $simpleConnection = new Connection($this->getSimpleConfig());
         $clusterConnection = new Connection($this->getClusterConfig());
-
+    
+        $clusterConnection->onCluster('test')->usingRandomServer();
+        
         $simpleClient = $simpleConnection->getClient();
         $clusterClient = $clusterConnection->getClient();
-
-        $this->assertInstanceOf(Cluster::class, $clusterClient->getCluster());
-        $this->assertInstanceOf(Server::class, $simpleClient->getServer());
-        $this->assertNull($simpleClient->getCluster());
+        
+        $clusterServer = $clusterClient->getServer();
+        $secondClusterServer = $clusterClient->getServer();
+        
+        while ($secondClusterServer === $clusterServer) {
+            $secondClusterServer = $clusterClient->getServer();
+        }
+        
+        $this->assertNotSame($clusterServer, $secondClusterServer);
+        $this->assertEquals($simpleClient->getServer(), $simpleClient->getServer());
     }
 
     public function test_connection_get_config()
@@ -112,7 +132,6 @@ class LaravelIntegrationTest extends TestCase
         $connection = new Connection($this->getSimpleConfig());
 
         $this->assertEquals($this->getSimpleConfig(), $connection->getConfig());
-        $this->assertEquals('localhost', $connection->getConfig('host'));
     }
 
     public function test_connection_query()
@@ -138,125 +157,115 @@ class LaravelIntegrationTest extends TestCase
         $this->assertInstanceOf(Expression::class, $connection->raw('value'));
     }
 
-    public function test_connection_begin_transaction()
-    {
-        $connection = new Connection($this->getSimpleConfig());
-        $this->expectException(NotSupportedException::class);
-        $connection->beginTransaction();
-    }
-
     public function test_connection_select()
     {
         $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-        $result = m::mock(Result::class);
-        $queryStat = m::mock(QueryStatistic::class);
 
-        $queryStat->shouldReceive('getTime')->andReturn(10);
-        $result->shouldReceive('getStatistic')->andReturn($queryStat);
-        $result->shouldReceive('getRows')->andReturn([]);
-
-        $client->shouldReceive('select')
-            ->with('select * from `table`', [], [])
-            ->andReturn($result);
-
-        $connection->setClient($client);
-
-        $connection->select('select * from `table`');
+        $result = $connection->select('select * from numbers(?, ?)', [
+            0, 10
+        ]);
+        $this->assertEquals(10, count($result));
     }
 
     public function test_connection_select_one()
     {
         $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-        $result = m::mock(Result::class);
-        $queryStat = m::mock(QueryStatistic::class);
-
-        $queryStat->shouldReceive('getTime')->andReturn(10);
-        $result->shouldReceive('getStatistic')->andReturn($queryStat);
-        $result->shouldReceive('getRows')->andReturn([]);
-
-        $client->shouldReceive('select')
-            ->with('select * from `table`', [], [])
-            ->andReturn($result);
-
-        $connection->setClient($client);
-
-        $connection->selectOne('select * from `table`');
+    
+        $result = $connection->selectOne('select * from numbers(?, ?)', [
+            0, 10
+        ]);
+        $this->assertEquals(10, count($result));
     }
 
     public function test_connection_statement()
     {
         $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-        $client->shouldReceive('statement')->with('query', [])->andReturn(true);
-        $connection->setClient($client);
-
-        $connection->statement('query');
+        $connection->statement('drop table if exists test');
+        
+        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $this->assertEquals(0, $result[0]['count']);
+        
+        $connection->statement('create table test (test String) Engine = Memory');
+        
+        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $this->assertEquals(1, $result[0]['count']);
+    
+        $connection->statement('drop table if exists test');
+        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $this->assertEquals(0, $result[0]['count']);
     }
 
     public function test_connection_unprepared()
     {
         $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-        $client->shouldReceive('statement')->with('query', [])->andReturn(true);
-        $connection->setClient($client);
-
-        $connection->unprepared('query');
+        $connection->unprepared('drop table if exists test');
+    
+        $result = $connection->select('select count() as count from system.tables where name = \'test\'');
+        $this->assertEquals(0, $result[0]['count']);
+    
+        $connection->statement('create table test (test String) Engine = Memory');
+    
+        $result = $connection->select('select count() as count from system.tables where name = \'test\'');
+        $this->assertEquals(1, $result[0]['count']);
+    
+        $connection->statement('drop table if exists test');
+        $result = $connection->select('select count() as count from system.tables where name = \'test\'');
+        $this->assertEquals(0, $result[0]['count']);
     }
 
     public function test_connection_select_async()
     {
         $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-
-        $result = m::mock(Result::class);
-        $queryStat = m::mock(QueryStatistic::class);
-
-        $queryStat->shouldReceive('getTime')->andReturn(10);
-        $result->shouldReceive('getStatistic')->andReturn($queryStat);
-        $result->shouldReceive('getRows')->andReturn([]);
-
-        $client->shouldReceive('selectAsync')
-            ->with([
-                'select * from `table1`',
-                'select * from `table2`',
-            ])
-            ->andReturn([$result, $result]);
-        $connection->setClient($client);
-
-        $connection->selectAsync([
-            'select * from `table1`',
-            'select * from `table2`',
+        
+        $result = $connection->selectAsync([
+            ['query' => 'select * from numbers(0, 10)'],
+            ['query' => 'select * from numbers(10, 10)'],
         ]);
+        
+        $this->assertEquals(2, count($result));
+        $this->assertEquals(['0','1','2','3','4','5','6','7','8','9'], array_column($result[0], 'number'));
+        $this->assertEquals(['10','11','12','13','14','15','16','17','18','19'], array_column($result[1], 'number'));
     }
 
     public function test_connection_insert()
     {
         $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-        $client->shouldReceive('insert')
-            ->with('insert into `table` (`column`, `column2`) values (`val`, `val`)', [])
-            ->andReturn(true);
-        $connection->setClient($client);
-
-        $result = $connection->insert('insert into `table` (`column`, `column2`) values (`val`, `val`)');
-
+        $connection->statement('drop table if exists test');
+        $connection->statement('create table test (number UInt64) engine = Memory');
+        
+        $result = $connection->insert('insert into test (number) values (?), (?), (?)', [0, 1, 2]);
         $this->assertTrue($result);
+        
+        $result = $connection->select('select * from test');
+    
+        $this->assertEquals(3, count($result));
     }
 
     public function test_connection_insert_files()
     {
         $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-        $client->shouldReceive('insertFiles')
-            ->with('table', ['column1', 'column2'], ['file1', 'file2'], null, 5)
-            ->andReturn([]);
-        $connection->setClient($client);
-
-        $result = $connection->insertFiles('table', ['column1', 'column2'], ['file1', 'file2']);
-
-        $this->assertEquals([], $result);
+        $connection->statement('drop table if exists test');
+        $connection->statement('create table test (number UInt64) engine = Memory');
+    
+        $result = $connection->insertFiles('test', ['number'], [
+            new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2')
+        ]);
+        $this->assertTrue($result[0][0]);
+    
+        $result = $connection->select('select * from test');
+    
+        $this->assertEquals(3, count($result));
+    }
+    
+    /*
+     * Not supported functions
+     */
+    
+    public function test_connection_begin_transaction()
+    {
+        $connection = new Connection($this->getSimpleConfig());
+        $this->expectException(NotSupportedException::class);
+        $connection->beginTransaction();
     }
 
     public function test_connection_update()
@@ -272,13 +281,48 @@ class LaravelIntegrationTest extends TestCase
         $this->expectException(NotSupportedException::class);
         $connection->commit();
     }
+    
+    public function test_last_query_statistic()
+    {
+        $connection = new Connection($this->getSimpleConfig());
+        $connection->table($connection->raw('numbers(0,10)'))->select('number')->get();
+        
+        $firstStatistic = $connection->getLastQueryStatistic();
+    
+        $connection->table($connection->raw('numbers(0,10000)'))->select('number')->get();
+    
+        $secondStatistic = $connection->getLastQueryStatistic();
+        
+        $this->assertNotSame($firstStatistic, $secondStatistic);
+        
+        $this->expectException(BuilderException::class);
+        $this->expectExceptionMessage('Run query before trying to get statistic');
+        
+        $connection = new Connection($this->getSimpleConfig());
+        $connection->getLastQueryStatistic();
+    }
 
-    //public function test_connection_delete()
-    //{
-    //    $connection = new Connection($this->getSimpleConfig());
-    //    $this->expectException(NotSupportedException::class);
-    //    $connection->delete('query');
-    //}
+    public function test_connection_delete()
+    {
+        /*
+         * delete redirects call to statement method, so
+         * just test it like statement
+         */
+        $connection = new Connection($this->getSimpleConfig());
+        $connection->delete('drop table if exists test');
+    
+        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $this->assertEquals(0, $result[0]['count']);
+    
+        $connection->delete('create table test (test String) Engine = Memory');
+    
+        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $this->assertEquals(1, $result[0]['count']);
+    
+        $connection->delete('drop table if exists test');
+        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $this->assertEquals(0, $result[0]['count']);
+    }
 
     public function test_connection_affecting_statement()
     {
@@ -312,82 +356,128 @@ class LaravelIntegrationTest extends TestCase
     public function test_connection_using()
     {
         $connection = new Connection($this->getClusterConfig());
-        $client = m::mock(Client::class);
-        $client->shouldReceive('using')->with('server-1')->andReturn($client);
-
-        $connection->setClient($client);
-
-        $connection->using('server-1');
+        
+        $connection->onCluster('test')->using('server-1')->statement('drop table if exists test1');
+        $connection->onCluster('test')->using('server2')->statement('drop table if exists test2');
+        
+        $connection->onCluster('test')->using('server-1')->statement('create database if not exists cluster1');
+        $connection->onCluster('test')->using('server2')->statement('create database if not exists cluster2');
+    
+        $connection->onCluster('test')->using('server-1')->statement('create table test1 (number UInt8) Engine = Memory');
+        $connection->onCluster('test')->using('server2')->statement('create table test2 (number UInt8) Engine = Memory');
+        
+        $result = $connection->onCluster('test')->using('server-1')->insert('insert into test1 (number) values (?), (?), (?)', [0, 1, 2]);
+        $this->assertTrue($result);
+    
+        $result = $connection->select('select * from test1');
+    
+        $this->assertEquals(3, count($result));
+    
+        $result = $connection->onCluster('test')->using('server2')->insert('insert into test2 (number) values (?), (?), (?), (?)', [0, 1, 2, 4]);
+        $this->assertTrue($result);
+    
+        $result = $connection->select('select * from test2');
+    
+        $this->assertEquals(4, count($result));
+    
+        $connection->onCluster('test')->using('server-1')->statement('drop table if exists test1');
+        $connection->onCluster('test')->using('server2')->statement('drop table if exists test2');
     }
 
     public function test_builder_get()
     {
-        $connection = new Connection($this->getClusterConfig());
-        $client = m::mock(Client::class);
-        $result = m::mock(Result::class);
-        $queryStat = m::mock(QueryStatistic::class);
-
-        $queryStat->shouldReceive('getTime')->andReturn(10);
-        $result->shouldReceive('getStatistic')->andReturn($queryStat);
-        $result->shouldReceive('getRows')->andReturn([]);
-
-        $client->shouldReceive('select')->with('SELECT `column` FROM `table`', [], [])->andReturn($result);
-        $connection->setClient($client);
-
-        $connection->table('table')->select('column')->get();
+        $connection = new Connection($this->getSimpleConfig());
+        
+        $result = $connection->table($connection->raw('numbers(0,10)'))->select('number')->get();
+        
+        $this->assertEquals(10, count($result));
     }
 
     public function test_builder_async_get()
     {
-        $connection = new Connection($this->getClusterConfig());
-        $client = m::mock(Client::class);
-        $result = m::mock(Result::class);
-        $queryStat = m::mock(QueryStatistic::class);
-
-        $queryStat->shouldReceive('getTime')->andReturn(10);
-        $result->shouldReceive('getStatistic')->andReturn($queryStat);
-        $result->shouldReceive('getRows')->andReturn([]);
-
-        $client->shouldReceive('selectAsync')->with([
-            ['SELECT * FROM `table`', [], []], ['SELECT * FROM `table2`', [], []],
-        ])->andReturn([$result, $result]);
-        $connection->setClient($client);
-
-        $connection->table('table')->asyncWithQuery(function ($builder) {
-            $builder->from('table2');
+        $connection = new Connection($this->getSimpleConfig());
+        $result = $connection->table($connection->raw('numbers(0,10)'))->select('number')->asyncWithQuery(function ($builder) use($connection) {
+            $builder->table($connection->raw('numbers(10,10)'))->select('number');
         })->get();
+    
+        $this->assertEquals(2, count($result));
+        $this->assertEquals(['0','1','2','3','4','5','6','7','8','9'], array_column($result[0], 'number'));
+        $this->assertEquals(['10','11','12','13','14','15','16','17','18','19'], array_column($result[1], 'number'));
     }
 
     public function test_builder_insert_files()
     {
         $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-        $client->shouldReceive('insertFiles')
-            ->with('table', ['column1', 'column2'], ['file1', 'file2'], Format::CSV, 5)
-            ->andReturn([]);
-        $connection->setClient($client);
-
-        $connection->table('table')->insertFiles(['column1', 'column2'], ['file1', 'file2']);
+        $connection->statement('drop table if exists test');
+        $connection->statement('create table test (number UInt64) engine = Memory');
+    
+        $result = $connection->table('test')->insertFiles(['number'], [
+            new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2')
+        ]);
+        $this->assertTrue($result[0][0]);
+    
+        $result = $connection->table('test')->get();
+    
+        $this->assertEquals(3, count($result));
     }
 
     public function test_builder_insert()
     {
         $connection = new Connection($this->getSimpleConfig());
-        $client = m::mock(Client::class);
-        $client->shouldReceive('insert')
-            ->with('INSERT INTO `table` (`column`, `column2`) FORMAT Values (?, ?)', ['val', 'val'])
-            ->andReturn(true)->twice();
-        $connection->setClient($client);
+        $connection->statement('drop table if exists test');
+        $connection->statement('create table test (number UInt64) engine = Memory');
 
-        $connection->table('table')->insert(['column' => 'val', 'column2' => 'val']);
-        $connection->table('table')->insert([['column' => 'val', 'column2' => 'val']]);
+        $connection->table('test')->insert(['number' => 1]);
+        $connection->table('test')->insert([['number' => 2], ['number' => 3]]);
+        
+        $connection->table('test')->insert([4]);
+        $connection->table('test')->insert([[5], [6]]);
 
-        $client->shouldReceive('insert')
-            ->with('INSERT INTO `table` FORMAT Values (?, ?)', ['val', 'val'])
-            ->andReturn(true);
-
-        $connection->table('table')->insert(['val', 'val']);
-
+        $result = $connection->table('test')->select('number')->get();
+        $this->assertEquals(6, count($result));
+        
         $this->assertFalse($connection->table('table')->insert([]));
+    }
+    
+    public function test_builder_delete()
+    {
+        $connection = new Connection($this->getSimpleConfig());
+        $connection->statement('drop table if exists test');
+        $connection->statement('create table test (number UInt64) engine = MergeTree order by number');
+    
+        $connection->table('test')->insertFiles(['number'], [
+            new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2')
+        ]);
+        
+        /*
+         * We have to sleep for 3 seconds while mutation in progress
+         */
+        sleep(3);
+        
+        $connection->table('test')->where('number', '=', 1)->delete();
+        
+        $result = $connection->table('test')->select($connection->raw('count() as count'))->get();
+        
+        $this->assertEquals(2, $result[0]['count']);
+    }
+    
+    public function test_builder_count()
+    {
+        $connection = new Connection($this->getSimpleConfig());
+        $result = $connection->table($connection->raw('numbers(0,10)'))->count();
+        
+        $this->assertEquals(10, $result);
+    
+        $result = $connection->table($connection->raw('numbers(0,10)'))->groupBy($connection->raw('number % 2'))->count();
+    
+        $this->assertEquals(2, $result);
+    }
+    
+    public function test_builder_first()
+    {
+        $connection = new Connection($this->getSimpleConfig());
+        $result = $connection->table($connection->raw('numbers(2,10)'))->first();
+        
+        $this->assertEquals(2, $result['number']);
     }
 }
