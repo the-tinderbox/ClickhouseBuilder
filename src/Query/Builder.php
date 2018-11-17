@@ -4,6 +4,7 @@ namespace Tinderbox\ClickhouseBuilder\Query;
 
 use Tinderbox\Clickhouse\Client;
 use Tinderbox\Clickhouse\Common\Format;
+use Tinderbox\Clickhouse\Query;
 
 class Builder extends BaseBuilder
 {
@@ -33,10 +34,22 @@ class Builder extends BaseBuilder
     public function get()
     {
         if (!empty($this->async)) {
-            return $this->client->read($this->toAsyncSqls());
+            return $this->client->read($this->toAsyncQueries());
         } else {
             return $this->client->readOne($this->toSql(), [], $this->getFiles());
         }
+    }
+    
+    /**
+     * Returns Query instance
+     *
+     * @param array $settings
+     *
+     * @return Query
+     */
+    public function toQuery(array $settings = []): Query
+    {
+        return new Query($this->client->getServer(), $this->toSql(), $this->getFiles(), $settings);
     }
     
     /**
@@ -85,7 +98,7 @@ class Builder extends BaseBuilder
         
         return $this->client->writeFiles($this->getFrom()->getTable(), $columns, $files, $format, [], $concurrency);
     }
-
+    
     /**
      * Insert in table data from files.
      *
@@ -98,9 +111,9 @@ class Builder extends BaseBuilder
     public function insertFile(array $columns, $file, string $format = Format::CSV): bool
     {
         $file = $this->prepareFile($file);
-
+        
         $result = $this->client->writeFiles($this->getFrom()->getTable(), $columns, [$file], $format);
-
+        
         return $result[0][0];
     }
     
@@ -119,8 +132,7 @@ class Builder extends BaseBuilder
         
         if (!is_array(reset($values))) {
             $values = [$values];
-        }
-        /*
+        } /*
          * Here, we will sort the insert keys for every record so that each insert is
          * in the same order for the record. We need to make sure this is the case
          * so there are not any errors or problems when inserting these records.
@@ -149,7 +161,7 @@ class Builder extends BaseBuilder
             $this->grammar->compileDelete($this)
         );
     }
-
+    
     /**
      * Executes query to create table
      *
@@ -163,7 +175,7 @@ class Builder extends BaseBuilder
     {
         return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure));
     }
-
+    
     /**
      * Executes query to create table if table does not exists
      *
@@ -177,12 +189,12 @@ class Builder extends BaseBuilder
     {
         return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, true));
     }
-
+    
     public function dropTable($tableName)
     {
         return $this->client->writeOne($this->grammar->compileDropTable($tableName));
     }
-
+    
     public function dropTableIfExists($tableName)
     {
         return $this->client->writeOne($this->grammar->compileDropTable($tableName, true));

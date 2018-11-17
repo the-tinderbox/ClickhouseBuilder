@@ -10,14 +10,13 @@ use Tinderbox\Clickhouse\Common\File;
 use Tinderbox\Clickhouse\Common\FileFromString;
 use Tinderbox\Clickhouse\Common\Format;
 use Tinderbox\Clickhouse\Common\TempTable;
+use Tinderbox\Clickhouse\Query;
 use Tinderbox\Clickhouse\Server;
 use Tinderbox\Clickhouse\ServerProvider;
-use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\Builder;
 use Tinderbox\ClickhouseBuilder\Query\Column;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Operator;
 use Tinderbox\ClickhouseBuilder\Query\From;
-use Tinderbox\ClickhouseBuilder\Query\Identifier;
 use Tinderbox\ClickhouseBuilder\Query\JoinClause;
 use Tinderbox\ClickhouseBuilder\Query\TwoElementsLogicExpression;
 
@@ -1084,5 +1083,46 @@ class BuilderTest extends TestCase
         $this->assertEquals(2, count($builder->getFiles()));
         $this->assertArrayHasKey('_numbers', $builder->getFiles());
         $this->assertArrayHasKey('_numbers2', $builder->getFiles());
+    }
+    
+    public function testToAsyncSqlsAndQueries()
+    {
+        $builder = $this->createBuilder();
+        $builder->table('system.tables')
+            ->where('database', '=', 'default')
+            ->where('name', '=','builder_test1');
+        
+        $builder->asyncWithQuery(function($builder) {
+            $builder
+                ->table('system.tables')
+                ->where('database', '=', 'default')
+                ->where('name', '=','builder_test2');
+        });
+        
+        $builder->asyncWithQuery(function($builder) {
+            $builder
+                ->table('system.tables')
+                ->where('database', '=', 'default')
+                ->where('name', '=','builder_test3');
+        });
+        
+        $sqls = $builder->toAsyncSqls();
+        $queries = $builder->toAsyncQueries();
+        
+        $this->assertEquals(3, count($sqls));
+        $this->assertEquals(3, count($queries));
+        
+        $sqls = array_column($sqls, 'query');
+        $queries = array_map(function(Query $query) {
+            return $query->getQuery();
+        }, $queries);
+        
+        $this->assertContains('SELECT * FROM `system`.`tables` WHERE `database` = \'default\' AND `name` = \'builder_test1\'', $sqls);
+        $this->assertContains('SELECT * FROM `system`.`tables` WHERE `database` = \'default\' AND `name` = \'builder_test2\'', $sqls);
+        $this->assertContains('SELECT * FROM `system`.`tables` WHERE `database` = \'default\' AND `name` = \'builder_test3\'', $sqls);
+        
+        $this->assertContains('SELECT * FROM `system`.`tables` WHERE `database` = \'default\' AND `name` = \'builder_test1\'', $queries);
+        $this->assertContains('SELECT * FROM `system`.`tables` WHERE `database` = \'default\' AND `name` = \'builder_test2\'', $queries);
+        $this->assertContains('SELECT * FROM `system`.`tables` WHERE `database` = \'default\' AND `name` = \'builder_test3\'', $queries);
     }
 }

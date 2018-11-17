@@ -302,6 +302,12 @@ class Connection extends \Illuminate\Database\Connection
      */
     public function selectAsync(array $queries)
     {
+        foreach ($queries as $i => $query) {
+            if (method_exists($query, 'toQuery')) {
+                $queries[$i] = $query->toQuery();
+            }
+        }
+        
         $queriesKeys = array_keys($queries);
         $results = array_combine($queriesKeys, $this->getClient()->read($queries));
         $statistic = [];
@@ -534,5 +540,15 @@ class Connection extends \Illuminate\Database\Connection
         $this->getClient()->usingRandomServer();
         
         return $this;
+    }
+    
+    /**
+     * Returns server on which query will be executed
+     *
+     * @return Server
+     */
+    public function getServer() : Server
+    {
+        return $this->getClient()->getServer();
     }
 }

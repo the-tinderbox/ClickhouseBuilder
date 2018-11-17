@@ -7,7 +7,6 @@ use Tinderbox\Clickhouse\Common\File;
 use Tinderbox\Clickhouse\Common\FileFromString;
 use Tinderbox\Clickhouse\Common\TempTable;
 use Tinderbox\Clickhouse\Interfaces\FileInterface;
-use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinStrict;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinType;
@@ -148,6 +147,10 @@ abstract class BaseBuilder
      * @var FileInterface
      */
     protected $values;
+    
+    protected $clusterName;
+    
+    protected $serverHostname;
     
     /**
      * Set columns for select statement.
@@ -1793,6 +1796,21 @@ abstract class BaseBuilder
         return array_map(
             function ($query) {
                 return ['query' => $query->toSql(), 'files' => $query->getFiles()];
+            },
+            $this->getAsyncQueries()
+        );
+    }
+    
+    /**
+     * Get an array of the SQL queries from all added async builders.
+     *
+     * @return array
+     */
+    public function toAsyncQueries(): array
+    {
+        return array_map(
+            function ($query) {
+                return $query->toQuery();
             },
             $this->getAsyncQueries()
         );

@@ -4,8 +4,7 @@ namespace Tinderbox\ClickhouseBuilder\Integrations\Laravel;
 
 use Illuminate\Support\Traits\Macroable;
 use Tinderbox\Clickhouse\Common\Format;
-use Tinderbox\Clickhouse\Common\TempTable;
-use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
+use Tinderbox\Clickhouse\Query;
 use Tinderbox\ClickhouseBuilder\Query\BaseBuilder;
 use Tinderbox\ClickhouseBuilder\Query\Grammar;
 
@@ -43,10 +42,22 @@ class Builder extends BaseBuilder
     public function get()
     {
         if (! empty($this->async)) {
-            return $this->connection->selectAsync($this->toAsyncSqls());
+            return $this->connection->selectAsync($this->toAsyncQueries());
         } else {
             return $this->connection->select($this->toSql(), [], $this->getFiles());
         }
+    }
+    
+    /**
+     * Returns Query instance
+     *
+     * @param array $settings
+     *
+     * @return Query
+     */
+    public function toQuery(array $settings = []): Query
+    {
+        return new Query($this->connection->getServer(), $this->toSql(), $this->getFiles(), $settings);
     }
 
     /**
