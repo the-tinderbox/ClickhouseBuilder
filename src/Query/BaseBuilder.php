@@ -5,6 +5,7 @@ namespace Tinderbox\ClickhouseBuilder\Query;
 use Closure;
 use Tinderbox\Clickhouse\Common\File;
 use Tinderbox\Clickhouse\Common\FileFromString;
+use Tinderbox\Clickhouse\Common\TempTable;
 use Tinderbox\Clickhouse\Interfaces\FileInterface;
 use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
@@ -1950,18 +1951,13 @@ abstract class BaseBuilder
     /**
      * Add file with data to query
      *
-     * @param             $file
-     * @param string|null $key Provide key if you don't want files duplicates
+     * @param TempTable   $file
      *
      * @return $this
      */
-    public function addFile($file, string $key = null)
+    public function addFile(TempTable $file)
     {
-        if (!is_null($key)){
-            $this->files[$key] = $this->prepareFile($file);
-        } else {
-            $this->files[] = $this->prepareFile($file);
-        }
+        $this->files[$file->getName()] = $file;
         
         return $this;
     }

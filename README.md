@@ -18,7 +18,9 @@ For working query builder we must previously instantiate and pass in constructor
 
 ```php
 $server = new Tinderbox\Clickhouse\Server('127.0.0.1', '8123', 'default', 'user', 'pass');
-$client = new Tinderbox\Clickhouse\Client($server);
+$serverProvider = (new Tinderbox\Clickhouse\ServerProvider())->addServer($server);
+
+$client = new Tinderbox\Clickhouse\Client($serverProvider);
 $builder = new Builder($client);
 ```
 After that we can build and perform sql queries.
@@ -34,21 +36,21 @@ $builder->select(['column', 'column2', 'column3' => 'alias']);
 All this calls will be transformed into next sql:
 
 ```sql
-SELECT `column`, `column2`, `column3` AS `alias` 
+SELECT `column`, `column2`, `column3` AS `alias`
 ```
 
 Also, as a column we can pass closure. In this case in closure will be passed instance of Column class, inside which we
 can setup column how we want. This can be useful for difficult expressions with many functions, subqueries and etc.
- 
+
 ```php
 $builder->select(function ($column) {
-    $column->name('time')->sumIf('time', '>', 10); 
+    $column->name('time')->sumIf('time', '>', 10);
 });
 ```
 Will be compiled in:
 
 ```sql
-SELECT sumIf(`time`, time > 10) 
+SELECT sumIf(`time`, time > 10)
 ```
 
 ```php
@@ -56,7 +58,7 @@ $builder->select(function ($column) {
     $column->as('alias') //or ->name('alias') in this case
     ->query()
     ->select('column')
-    ->from('table'); 
+    ->from('table');
 });
 ```
 Will be compiled in:
@@ -76,7 +78,7 @@ $1 = $builder->select(function ($column) {
 });
 $2 = $builder->select(function ($column) {
          $column->as('alias') //or ->name('alias') in this case
-            ->query($builder->select('column')->from('table')); 
+            ->query($builder->select('column')->from('table'));
 });
 ```
 
@@ -90,7 +92,7 @@ $builder->select('column')->from('table', 'alias');
 Produce the following query:
 
 ```sql
-SELECT `column` FROM `table` as `alias` 
+SELECT `column` FROM `table` as `alias`
 ```
 
 Also can be passed closure or builder as argument for performing sub query.
@@ -102,7 +104,7 @@ $builder->from(function ($from) {
 ```
 
 ```sql
-SELECT * FROM (SELECT `column` FROM `table`) 
+SELECT * FROM (SELECT `column` FROM `table`)
 ```
 
 or
@@ -138,7 +140,7 @@ $builder->select('column')->from('table')->sample(0.1);
 ```
 
 ```sql
-SELECT `column` FROM `table` SAMPLE 0.1 
+SELECT `column` FROM `table` SAMPLE 0.1
 ```
 
 I think there no need for additional words)
@@ -150,7 +152,7 @@ $builder->from('table')->join('another_table', 'any', 'left', ['column1', 'colum
 ```
 
 ```sql
-SELECT * FROM `table` GLOBAL ANY LEFT JOIN `another_table` USING `column1`, `column2` 
+SELECT * FROM `table` GLOBAL ANY LEFT JOIN `another_table` USING `column1`, `column2`
 ```
 
 For performing subquery as first argument you can pass closure or builder.
@@ -164,11 +166,11 @@ $builder->from('table')->join($builder->select('column1', 'column2')->from('tabl
 ```
 
 ```sql
-SELECT * FROM `table` ANY LEFT JOIN (SELECT `column1`, `column2` FROM `table2`) USING `column1`, `column2` 
+SELECT * FROM `table` ANY LEFT JOIN (SELECT `column1`, `column2` FROM `table2`) USING `column1`, `column2`
 ```
 
 Also there are many helper functions with hardcoded arguments, like strict or type and they combinations.
- 
+
 ```php
 $builder->from('table')->anyLeftJoin('table', ['column']);
 $builder->from('table')->allLeftJoin('table', ['column']);
@@ -184,28 +186,63 @@ $buulder->from('table')->innerJoin('table', 'all', ['column']);
 There are some cases when you need to filter f.e. users by their ids, but amount of ids is huge. You can
 store users ids in local file, upload it to server and use it as temporary table.
 
+Read more about local files [here](https://github.com/the-tinderbox/ClickhouseClient) in section `Using local files`.
+
+#### Select
+
+You should pass instance of `TempTable` with declared table structure to attach file to query.
+
 ```php
-/*
- * Add file with users ids to builder as _users table
- * Also, we must define data structure in file. In example below
- * structure will be like ['UInt64']
- */
-$builder->addFile('users.csv', '_users', ['UInt64']);
-$builder->select(raw('count()'))->from('clicks')->whereIn('userId', new Identifier('_users'));
-```
+$builder->addFile(new TempTable('numbersTable', 'numbers.tsv', ['number' => 'UInt64'], Format::TSV));
 
-Will produce:
-
-```sql
-SELECT count() FROM `clicks` WHERE `userId` IN `_users`
+$builder->table(raw('numbers(0,1000)')->whereIn('number', 'numbersTable')->get();
 ```
 
 **If you want tables to be detected automatically, call `addFile` method before calling `whereIn`.**
 
 You can use local files in `whereIn`, `prewhereIn`, `havingIn` and `join` statements of query builder.
 
+#### Insert
+
+If you want to insert file or files into Clickhouse, you could use `insertFile` and `insertFiles` methods.
+
+```
+$builder->table('test')->insertFile(['date', 'userId'], 'test.tsv', Format::TSV);
+```
+
+Or you can pass batch of files into `insertFiles` method and all of them will be inserted
+asynchronously.
+
+```
+$builder->table('test')-insertFiles(['date', 'userId'], [
+    'test-1.tsv',
+    'test-2.tsv',
+    'test-3.tsv',
+    'test-4.tsv',
+    'test-5.tsv',
+    'test-6.tsv',
+    'test-7.tsv',
+], Format::TSV)
+```
+
+Also, you can use helper and insert data to temporary table with engine Memory.
+
+```
+$builder->table('test')->values('test.tsv')->format(Format::TSV);
+
+into_memory_table($builder, [
+    'date' => 'Date',
+    'userId' => 'UInt64'
+]);
+```
+
+Helper will drop temporary table with name `test` and creates table with declared structure, engine Memory
+and inserts data from `test.tsv` file into just created table.
+
+It's helpful if you want to fill some table with data to execute query and then drop it.
+
 ### Prewhere, where, having
-All example will be about where, but same behavior also is for prewhere and having. 
+All example will be about where, but same behavior also is for prewhere and having.
 
 ```php
 $builder->from('table')->where('column', '=', 'value');
@@ -213,12 +250,12 @@ $builder->from('table')->where('column', 'value');
 ```
 
 ```sql
-SELECT * FROM `table` WHERE `column` = 'value' 
+SELECT * FROM `table` WHERE `column` = 'value'
 ```
 
 All string values will be wrapped with single quotes.
 If operator is not provided `=` will be used.
-If operator is not provided and value is an array, then `IN` will be used. 
+If operator is not provided and value is an array, then `IN` will be used.
 
 ```php
 $builder->from('table')->where(function ($query) {
@@ -227,7 +264,7 @@ $builder->from('table')->where(function ($query) {
 ```
 
 ```sql
-SELECT * FROM `table` WHERE (`column1` = 'value' AND `column2` = 'value') 
+SELECT * FROM `table` WHERE (`column1` = 'value' AND `column2` = 'value')
 ```
 
 If in the first argument was passed closure, then all wheres statements from inside will be wrapped with parenthesis.
@@ -240,7 +277,7 @@ $builder->from('table')->where(function ($query) {
 ```
 
 ```sql
-SELECT * FROM `table` WHERE (SELECT `column` FROM `table`) 
+SELECT * FROM `table` WHERE (SELECT `column` FROM `table`)
 ```
 
 Almost same is for value parameter, except wrapping into parenthesis.
@@ -253,7 +290,7 @@ $builder->from('table')->where('column', 'IN', function ($query) {
 ```
 
 ```sql
-SELECT * FROM `table` WHERE `column` IN (SELECT `column` FROM `table`) 
+SELECT * FROM `table` WHERE `column` IN (SELECT `column` FROM `table`)
 ```
 
 Also you can pass internal representation of this statement and it will be used. I will no talk about this with deeper
@@ -300,7 +337,7 @@ $builder->whereDict('dict', 'attribute', 'key', '=', 'value');
 ```
 
 ```sql
-SELECT dictGetString('dict', 'attribute', 'key') as `attribute` WHERE `attribute` = 'value' 
+SELECT dictGetString('dict', 'attribute', 'key') as `attribute` WHERE `attribute` = 'value'
 ```
 
 If you want to use complex key, you may pass an array as `$key`, then array will be converted to tuple. By default all strings will be escaped by single quotes, but you may pass an `Identifier` instance to pass for example column name:
@@ -312,7 +349,7 @@ $builder->whereDict('dict', 'attribute', [new Identifier('column'), 'string valu
 Will produce:
 
 ```sql
-SELECT dictGetString('dict', 'attribute', tuple(`column`, 'string value')) as `attribute` WHERE `attribute` = 'value' 
+SELECT dictGetString('dict', 'attribute', tuple(`column`, 'string value')) as `attribute` WHERE `attribute` = 'value'
 ```
 
 ### Group By
@@ -349,13 +386,13 @@ $builder->orderByDesc('column');
 ```
 
 For column there are same behaviour like in select method.
- 
+
 ### Limit
 
 There are two types of limit. Limit and limit n by.
- 
+
 Limit n by:
- 
+
 ```php
 $builder->from('table')->limitBy(1, 'column1', 'column2');
 ```
@@ -363,11 +400,11 @@ $builder->from('table')->limitBy(1, 'column1', 'column2');
 Will produce:
 
 ```sql
-SELECT * FROM `table` LIMIT 1 BY `column1`, `column2` 
+SELECT * FROM `table` LIMIT 1 BY `column1`, `column2`
 ```
- 
+
 Simple limit:
- 
+
 ```php
 $builder->from('table')->limit(10, 100);
 ```
@@ -375,7 +412,7 @@ $builder->from('table')->limit(10, 100);
 Will produce:
 
 ```sql
-SELECT * FROM `table` LIMIT 100, 10 
+SELECT * FROM `table` LIMIT 100, 10
 ```
 
 ```php
@@ -394,7 +431,7 @@ $builder->from('table')->unionAll(function($query) {
 ```
 
 ```sql
-SELECT * FROM `table` UNION ALL SELECT `column1` FROM `table` UNION ALL SELECT `column2` FROM `table` 
+SELECT * FROM `table` UNION ALL SELECT `column1` FROM `table` UNION ALL SELECT `column2` FROM `table`
 ```
 
 ### Performing request and getting result.
@@ -415,7 +452,7 @@ request with this number.
 
 ### Integrations
 
-#### Laravel
+#### Laravel or Lumen < 5.5
 
 You can use this builder in Laravel/Lumen applications.
 
@@ -441,36 +478,15 @@ $app->register(\Tinderbox\ClickhouseBuilder\Integrations\Laravel\ClickhouseServi
 
 Connection configures via `config/database.php`.
 
-**By default used http transport, but you can specify transport via `transport` option.**
-
 Example with alone server:
 
 ```php
 'connections' => [
     'clickhouse' => [
         'driver' => 'clickhouse',
-        'host' => '',
-        'port' => '',
-        'database' => '',
-        'username' => '',
-        'password' => '',
-        'options' => [
-            'timeout' => 10,
-            'protocol' => 'https'
-        ]
-    ]
-]
-```
-
-Example with cluster:
-
-```php
-'connections' => [
-    'clickhouse' => [
-        'driver' => 'clickhouse',
-        'cluster' => [
-            'server-1' => [
-                'host' => '',
+        'servers' => [
+            [
+                'host' => 'ch-00.domain.com',
                 'port' => '',
                 'database' => '',
                 'username' => '',
@@ -480,8 +496,9 @@ Example with cluster:
                     'protocol' => 'https'
                 ]
             ],
-            'server-2' => [
-                'host' => '',
+
+            [
+                'host' => 'ch-01.domain.com',
                 'port' => '',
                 'database' => '',
                 'username' => '',
@@ -496,8 +513,62 @@ Example with cluster:
 ]
 ```
 
-Choose server from cluster to perform request:
+Example with cluster:
 
 ```php
-DB::connection('clickhouse')->using('server-2')->select(...);
+'connections' => [
+    'clickhouse' => [
+        'driver' => 'clickhouse',
+        'clusters' => [
+            'cluster-name' => [
+                [
+                    'host' => '',
+                    'port' => '',
+                    'database' => '',
+                    'username' => '',
+                    'password' => '',
+                    'options' => [
+                        'timeout' => 10,
+                        'protocol' => 'https'
+                    ]
+                ],
+
+                [
+                    'host' => '',
+                    'port' => '',
+                    'database' => '',
+                    'username' => '',
+                    'password' => '',
+                    'options' => [
+                        'timeout' => 10,
+                        'protocol' => 'https'
+                    ]
+                ]
+            ]
+        ]
+    ]
+]
 ```
+
+Choose server without cluster:
+
+```php
+DB::connection('clickhouse')->using('ch-01.domain.com')->select(...);
+```
+
+Or execute each new query on random server:
+
+```php
+DB::connection('clickhouse')->usingRandomServer()->select(...);
+```
+
+Choose cluster:
+
+```php
+DB::connection('clickhouse')->onCluster('test')->select(...);
+```
+
+You can use both `servers` and `clusters` config directives and choose on which server
+query should be executed via `onCluster` and `using` methods. If you want to choose
+server outside cluster, you should just call `onCluster(null)` and then call `using` method. You can
+call `usingRandomServer` and `using` methods with selected cluster or not.

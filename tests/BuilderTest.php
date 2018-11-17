@@ -434,7 +434,7 @@ class BuilderTest extends TestCase
         $this->assertEquals('SELECT `column` FROM `table` PREWHERE `column` IN (\'string\', 1, 2, 3)', $builder->toSql());
 
         $builder = $builder->newQuery();
-        $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->preWhereIn('column', '_numbers');
+        $builder->addFile(new TempTable('_numbers', '', ['number' => 'UInt64']))->select('column')->from('table')->preWhereIn('column', '_numbers');
 
         $this->assertEquals('SELECT `column` FROM `table` PREWHERE `column` IN `_numbers`', $builder->toSql());
 
@@ -608,12 +608,12 @@ class BuilderTest extends TestCase
         $this->assertEquals('SELECT * FROM `table` WHERE `column` GLOBAL NOT IN (1, 2, 3) OR `column2` GLOBAL NOT IN (1, 2, 3)', $builder->toSql());
 
         $builder = $builder->newQuery();
-        $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->whereIn('column', '_numbers');
+        $builder->addFile(new TempTable('_numbers', '', ['number' => 'UInt64']))->select('column')->from('table')->whereIn('column', '_numbers');
 
         $this->assertEquals('SELECT `column` FROM `table` WHERE `column` IN `_numbers`', $builder->toSql());
 
         $builder = $builder->newQuery();
-        $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->whereGlobalIn('column', '_numbers');
+        $builder->addFile(new TempTable('_numbers', '', ['number' => 'UInt64']))->select('column')->from('table')->whereGlobalIn('column', '_numbers');
 
         $this->assertEquals('SELECT `column` FROM `table` WHERE `column` GLOBAL IN `_numbers`', $builder->toSql());
     }
@@ -725,7 +725,7 @@ class BuilderTest extends TestCase
         $this->assertEquals('SELECT * FROM `table` GROUP BY `column` HAVING `column` IN (1, 2, 3)', $builder->toSql());
 
         $builder = $builder->newQuery();
-        $builder->addFile('numbers.csv', '_numbers', ['UInt64'])->select('column')->from('table')->havingIn('column', '_numbers');
+        $builder->addFile(new TempTable('_numbers', '', ['number' => 'UInt64']))->select('column')->from('table')->havingIn('column', '_numbers');
 
         $this->assertEquals('SELECT `column` FROM `table` HAVING `column` IN `_numbers`', $builder->toSql());
 
@@ -1078,10 +1078,11 @@ class BuilderTest extends TestCase
     public function testAddFile()
     {
         $builder = $this->getBuilder();
-        $builder->addFile(new FileFromString(''));
-        $builder->addFile(new FileFromString(''), 'file_name');
+        $builder->addFile(new TempTable('_numbers', '', ['number' => 'UInt64']));
+        $builder->addFile(new TempTable('_numbers2', '', ['number' => 'UInt64']));
         
         $this->assertEquals(2, count($builder->getFiles()));
-        $this->assertArrayHasKey('file_name', $builder->getFiles());
+        $this->assertArrayHasKey('_numbers', $builder->getFiles());
+        $this->assertArrayHasKey('_numbers2', $builder->getFiles());
     }
 }

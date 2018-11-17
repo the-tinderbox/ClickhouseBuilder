@@ -30,7 +30,7 @@
   "require": {
     "php": "~7.1",
     "myclabs/php-enum": "^1.5",
-    "the-tinderbox/clickhouse-php-client": "~1.1.0"
+    "the-tinderbox/clickhouse-php-client": ">=1.1.1"
   },
   "require-dev": {
     "illuminate/database": "5.*",
@@ -38,6 +38,13 @@
     "mockery/mockery": "^0.9.9",
     "illuminate/events": "5.*",
     "illuminate/config": "5.*"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Tinderbox\\ClickhouseBuilder\\Integrations\\Laravel\\ClickhouseServiceProvider"
+      ]
+    }
   },
   "scripts": {
     "test": "phpunit --coverage-text --colors=never",

@@ -4,8 +4,6 @@ namespace Tinderbox\ClickhouseBuilder\Query;
 
 use Tinderbox\Clickhouse\Client;
 use Tinderbox\Clickhouse\Common\Format;
-use Tinderbox\Clickhouse\Common\TempTable;
-use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 
 class Builder extends BaseBuilder
 {
@@ -121,7 +119,8 @@ class Builder extends BaseBuilder
         
         if (!is_array(reset($values))) {
             $values = [$values];
-        } /*
+        }
+        /*
          * Here, we will sort the insert keys for every record so that each insert is
          * in the same order for the record. We need to make sure this is the case
          * so there are not any errors or problems when inserting these records.
