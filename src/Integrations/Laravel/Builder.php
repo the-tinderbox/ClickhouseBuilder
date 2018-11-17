@@ -116,6 +116,24 @@ class Builder extends BaseBuilder
     {
         return $this->connection->insertFiles((string)$this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
     }
+    
+    /**
+     * Insert in table data from files.
+     *
+     * @param array                                                 $columns
+     * @param string|\Tinderbox\Clickhouse\Interfaces\FileInterface $file
+     * @param string                                                $format
+     *
+     * @return bool
+     */
+    public function insertFile(array $columns, $file, string $format = Format::CSV): bool
+    {
+        $file = $this->prepareFile($file);
+        
+        $result = $this->connection->insertFiles($this->getFrom()->getTable(), $columns, [$file], $format);
+        
+        return $result[0][0];
+    }
 
     /**
      * Performs insert query.

@@ -419,6 +419,16 @@ class LaravelIntegrationTest extends TestCase
         $result = $connection->table('test')->get();
     
         $this->assertEquals(3, count($result));
+    
+        $connection->statement('drop table if exists test');
+        $connection->statement('create table test (number UInt64) engine = Memory');
+    
+        $result = $connection->table('test')->insertFile(['number'], new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2'));
+        $this->assertTrue($result);
+    
+        $result = $connection->table('test')->get();
+    
+        $this->assertEquals(3, count($result));
     }
 
     public function test_builder_insert()
