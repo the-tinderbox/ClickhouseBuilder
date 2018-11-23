@@ -307,9 +307,8 @@ class Connection extends \Illuminate\Database\Connection
                 $queries[$i] = $query->toQuery();
             }
         }
-        
-        $queriesKeys = array_keys($queries);
-        $results = array_combine($queriesKeys, $this->getClient()->read($queries));
+
+        $results = $this->getClient()->read($queries);
         $statistic = [];
         
         foreach ($results as $i => $result) {
