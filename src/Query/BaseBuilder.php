@@ -142,6 +142,11 @@ abstract class BaseBuilder
     protected $onCluster;
 
     /**
+     * @var bool|null
+     */
+    protected $totals;
+
+    /**
      * File representing values which should be inserted in table
      *
      * @var FileInterface
@@ -2028,5 +2033,21 @@ abstract class BaseBuilder
         $file = file_from($file);
 
         return $file;
+    }
+
+    /**
+     *
+     */
+    public function withTotals(): void
+    {
+        $this->totals = true;
+    }
+
+    /**
+     * @return bool|null
+     */
+    public function getTotals(): ?bool
+    {
+        return $this->totals;
     }
 }
