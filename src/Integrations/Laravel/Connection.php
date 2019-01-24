@@ -144,9 +144,13 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @return \Tinderbox\Clickhouse\Interfaces\TransportInterface
      */
-    protected function createTransport(array $options): TransportInterface
+    protected function createTransport(array $options) : TransportInterface
     {
-        return new HttpTransport($options['client'] ?? null, $options['timeout'] ?? 5.0);
+        $client = $options['client'] ?? null;
+
+        unset($options['client']);
+
+        return new HttpTransport($client, $options);
     }
     
     /**
