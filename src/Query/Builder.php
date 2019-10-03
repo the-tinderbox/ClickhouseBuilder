@@ -25,18 +25,20 @@ class Builder extends BaseBuilder
         $this->client = $client;
         $this->grammar = new Grammar();
     }
-    
+
     /**
      * Perform compiled from builder sql query and getting result.
      *
+     * @param array $settings
+     *
      * @return \Tinderbox\Clickhouse\Query\Result|\Tinderbox\Clickhouse\Query\Result[]
      */
-    public function get()
+    public function get(array $settings = [])
     {
         if (!empty($this->async)) {
             return $this->client->read($this->toAsyncQueries());
         } else {
-            return $this->client->readOne($this->toSql(), [], $this->getFiles());
+            return $this->client->readOne($this->toSql(), $this->getFiles(), $settings);
         }
     }
     
@@ -79,48 +81,54 @@ class Builder extends BaseBuilder
     {
         return new static($this->client);
     }
-    
+
     /**
      * Insert in table data from files.
      *
-     * @param array  $columns
-     * @param array  $files
+     * @param array $columns
+     * @param array $files
      * @param string $format
-     * @param int    $concurrency
+     * @param int $concurrency
+     *
+     * @param array $settings
      *
      * @return array
      */
-    public function insertFiles(array $columns, array $files, string $format = Format::CSV, int $concurrency = 5): array
+    public function insertFiles(array $columns, array $files, string $format = Format::CSV, int $concurrency = 5, array $settings = []): array
     {
         foreach ($files as $i => $file) {
             $files[$i] = $this->prepareFile($file);
         }
         
-        return $this->client->writeFiles($this->getFrom()->getTable(), $columns, $files, $format, [], $concurrency);
+        return $this->client->writeFiles($this->getFrom()->getTable(), $columns, $files, $format, $settings, $concurrency);
     }
-    
+
     /**
      * Insert in table data from files.
      *
-     * @param array                                                 $columns
+     * @param array $columns
      * @param string|\Tinderbox\Clickhouse\Interfaces\FileInterface $file
-     * @param string                                                $format
+     * @param string $format
+     *
+     * @param array $settings
      *
      * @return bool
      */
-    public function insertFile(array $columns, $file, string $format = Format::CSV): bool
+    public function insertFile(array $columns, $file, string $format = Format::CSV, array $settings = []): bool
     {
         $file = $this->prepareFile($file);
         
-        $result = $this->client->writeFiles($this->getFrom()->getTable(), $columns, [$file], $format);
+        $result = $this->client->writeFiles($this->getFrom()->getTable(), $columns, [$file], $format, $settings);
         
         return $result[0][0];
     }
-    
+
     /**
      * Performs insert query.
      *
      * @param array $values
+     *
+     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
      *
      * @return bool
      */

@@ -288,7 +288,7 @@ class Connection extends \Illuminate\Database\Connection
      */
     public function select($query, $bindings = [], $tables = [])
     {
-        $result = $this->getClient()->readOne($query, $bindings, $tables);
+        $result = $this->getClient()->readOne($query, $tables);
         
         $this->logQuery($result->getQuery()->getQuery(), [], $result->getStatistic()->getTime());
         
@@ -394,7 +394,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         $startTime = microtime(true);
         
-        $result = $this->getClient()->writeOne($query, $bindings);
+        $result = $this->getClient()->writeOne($query);
         
         $this->logQuery($query, $bindings, microtime(true) - $startTime);
         
@@ -486,7 +486,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         $start = microtime(true);
         
-        $result = $this->getClient()->writeOne($query, $bindings);
+        $result = $this->getClient()->writeOne($query);
         
         $this->logQuery($query, $bindings, microtime(true) - $start);
         
