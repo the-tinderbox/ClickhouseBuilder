@@ -26,8 +26,14 @@ trait JoinComponentCompiler
             $result[] = 'GLOBAL';
         }
 
-        $result[] = $join->getStrict();
-        $result[] = $join->getType();
+        if (! is_null($join->getStrict())) {
+            $result[] = $join->getStrict();
+        }
+
+        if (! is_null($join->getType())) {
+            $result[] = $join->getType();
+        }
+
         $result[] = 'JOIN';
         $result[] = $this->wrap($join->getTable());
         $result[] = 'USING';
@@ -48,9 +54,6 @@ trait JoinComponentCompiler
     private function verifyJoin(JoinClause $joinClause)
     {
         if (
-            is_null($joinClause->getStrict()) ||
-            is_null($joinClause->getType()) ||
-            is_null($joinClause->getUsing()) ||
             is_null($joinClause->getTable()) ||
             is_null($joinClause->getUsing())
         ) {
