@@ -194,8 +194,8 @@ class Grammar
     public function compileInsertValues($values)
     {
         return implode(', ', array_map(function ($value) {
-            return '(' . implode(', ', array_map(function () {
-                    return '?';
+            return '(' . implode(', ', array_map(function ($value) {
+                    return $this->wrap($value);
                 }, $value)) . ')';
         }, $values));
     }

@@ -69,7 +69,7 @@ class GrammarTest extends TestCase
             ['column' => 'value 3'],
         ]);
 
-        $this->assertEquals('INSERT INTO `table` (`column`) FORMAT Values (?), (?), (?)', $sql);
+        $this->assertEquals("INSERT INTO `table` (`column`) FORMAT Values ('value'), ('value 2'), ('value 3')", $sql);
     }
 
     public function testCompileInsertWithoutFrom()

@@ -161,9 +161,7 @@ class LaravelIntegrationTest extends TestCase
     {
         $connection = new Connection($this->getSimpleConfig());
 
-        $result = $connection->select('select * from numbers(?, ?)', [
-            0, 10
-        ]);
+        $result = $connection->select('select * from numbers(0, 10)');
         $this->assertEquals(10, count($result));
     }
 
@@ -171,9 +169,7 @@ class LaravelIntegrationTest extends TestCase
     {
         $connection = new Connection($this->getSimpleConfig());
     
-        $result = $connection->selectOne('select * from numbers(?, ?)', [
-            0, 10
-        ]);
+        $result = $connection->selectOne('select * from numbers(0, 10)');
         $this->assertEquals(10, count($result));
     }
 
@@ -182,16 +178,16 @@ class LaravelIntegrationTest extends TestCase
         $connection = new Connection($this->getSimpleConfig());
         $connection->statement('drop table if exists test');
         
-        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $result = $connection->select("select count() as count from system.tables where name = 'test'");
         $this->assertEquals(0, $result[0]['count']);
         
         $connection->statement('create table test (test String) Engine = Memory');
         
-        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $result = $connection->select("select count() as count from system.tables where name = 'test'");
         $this->assertEquals(1, $result[0]['count']);
     
         $connection->statement('drop table if exists test');
-        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $result = $connection->select("select count() as count from system.tables where name = 'test'");
         $this->assertEquals(0, $result[0]['count']);
     }
 
@@ -311,16 +307,16 @@ class LaravelIntegrationTest extends TestCase
         $connection = new Connection($this->getSimpleConfig());
         $connection->delete('drop table if exists test');
     
-        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $result = $connection->select("select count() as count from system.tables where name = 'test'");
         $this->assertEquals(0, $result[0]['count']);
     
         $connection->delete('create table test (test String) Engine = Memory');
     
-        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $result = $connection->select("select count() as count from system.tables where name = 'test'");
         $this->assertEquals(1, $result[0]['count']);
     
         $connection->delete('drop table if exists test');
-        $result = $connection->select('select count() as count from system.tables where name = ?', ['test']);
+        $result = $connection->select("select count() as count from system.tables where name = 'test'");
         $this->assertEquals(0, $result[0]['count']);
     }
 

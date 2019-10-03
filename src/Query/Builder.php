@@ -151,11 +151,8 @@ class Builder extends BaseBuilder
                 $values[$key] = $value;
             }
         }
-        
-        return $this->client->writeOne(
-            $this->grammar->compileInsert($this, $values),
-            array_flatten($values)
-        );
+
+        return $this->client->writeOne($this->grammar->compileInsert($this, $values));
     }
     
     /**
