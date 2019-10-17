@@ -87,7 +87,7 @@ class Builder extends BaseBuilder
      */
     public function first()
     {
-        $result = $this->get();
+        $result = $this->limit(1)->get();
 
         return $result[0] ?? null;
     }
