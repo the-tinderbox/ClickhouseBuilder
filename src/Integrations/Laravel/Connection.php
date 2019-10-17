@@ -235,6 +235,7 @@ class Connection extends \Illuminate\Database\Connection
      * Begin a fluent query against a database table.
      *
      * @param string $table
+     * @param string $as
      *
      * @return \Tinderbox\ClickhouseBuilder\Integrations\Laravel\Builder
      */
