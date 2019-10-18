@@ -134,7 +134,7 @@ class Connection extends \Illuminate\Database\Connection
      */
     protected function createClientFor($server, TransportInterface $transport)
     {
-        return new Client($server, null, $transport);
+        return new Client($server, $transport);
     }
     
     /**
