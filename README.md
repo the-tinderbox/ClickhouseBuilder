@@ -484,6 +484,23 @@ Example with alone server:
 'connections' => [
     'clickhouse' => [
         'driver' => 'clickhouse',
+        'host' => 'ch-00.domain.com',
+        'port' => '',
+        'database' => '',
+        'username' => '',
+        'password' => '',
+        'options' => [
+            'timeout' => 10,
+            'protocol' => 'https'
+        ]
+    ]
+]
+```
+or
+```php
+'connections' => [
+    'clickhouse' => [
+        'driver' => 'clickhouse',
         'servers' => [
             [
                 'host' => 'ch-00.domain.com',

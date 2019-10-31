@@ -5,6 +5,7 @@ namespace Tinderbox\ClickhouseBuilder\Integrations\Laravel;
 use Illuminate\Support\Traits\Macroable;
 use Tinderbox\Clickhouse\Common\Format;
 use Tinderbox\Clickhouse\Query;
+use Tinderbox\Clickhouse\Query\QueryStatistic;
 use Tinderbox\ClickhouseBuilder\Query\BaseBuilder;
 use Tinderbox\ClickhouseBuilder\Query\Grammar;
 
@@ -176,5 +177,27 @@ class Builder extends BaseBuilder
     public function delete()
     {
         return $this->connection->delete($this->grammar->compileDelete($this));
+    }
+
+    /**
+     * Get last query statistics from the connection.
+     *
+     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\BuilderException
+     *
+     * @return QueryStatistic
+     */
+    public function getLastQueryStatistics() : QueryStatistic
+    {
+        return $this->getConnection()->getLastQueryStatistic();
+    }
+
+    /**
+     * Get connection.
+     *
+     * @return Connection
+     */
+    public function getConnection() : Connection
+    {
+        return $this->connection;
     }
 }

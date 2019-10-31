@@ -163,6 +163,12 @@ class Connection extends \Illuminate\Database\Connection
     protected function assembleServerProvider(array $config)
     {
         $serverProvider = new ServerProvider();
+
+        if (empty($config['clusters'] ?? []) && empty($config['servers'] ?? [])) {
+            $serverProvider->addServer($this->assembleServer($config));
+
+            return $serverProvider;
+        }
         
         foreach ($config['clusters'] ?? [] as $clusterName => $servers) {
             $cluster = new Cluster(
@@ -180,7 +186,7 @@ class Connection extends \Illuminate\Database\Connection
         foreach ($config['servers'] ?? [] as $server) {
             $serverProvider->addServer($this->assembleServer($server));
         }
-        
+
         return $serverProvider;
     }
     
