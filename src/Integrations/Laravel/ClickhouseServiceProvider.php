@@ -16,7 +16,13 @@ class ClickhouseServiceProvider extends ServiceProvider
         $db->extend('clickhouse', function ($config, $name) {
             $config['name'] = $name;
 
-            return new Connection($config);
+            $connection = new Connection($config);
+
+            if ($this->app->bound('events')) {
+                $connection->setEventDispatcher($this->app['events']);
+            }
+
+            return $connection;
         });
     }
 }
