@@ -244,9 +244,9 @@ class Connection extends \Illuminate\Database\Connection
      *
      * @return \Tinderbox\ClickhouseBuilder\Integrations\Laravel\Builder
      */
-    public function table($table)
+    public function table($table, $alias = null)
     {
-        return $this->query()->from($table);
+        return $this->query()->from($table, $alias);
     }
     
     /**
