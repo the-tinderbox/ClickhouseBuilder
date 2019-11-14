@@ -1092,13 +1092,17 @@ abstract class BaseBuilder
     public function whereIn($column, $values, $boolean = Operator:: AND, $not = false)
     {
         $type = $not ? Operator::NOT_IN : Operator::IN;
-        
+
         if (is_array($values)) {
+            if (empty($values)) {
+                return $type === Operator::IN ? $this->where(new Expression('0 = 1')) : $this;
+            }
+
             $values = new Tuple($values);
         } elseif (is_string($values) && isset($this->files[$values])) {
             $values = new Identifier($values);
         }
-        
+
         return $this->where($column, $type, $values, $boolean);
     }
     

@@ -2,11 +2,13 @@
 
 namespace Tinderbox\ClickhouseBuilder\Integrations\Laravel;
 
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Traits\Macroable;
 use Tinderbox\Clickhouse\Common\Format;
 use Tinderbox\Clickhouse\Query;
 use Tinderbox\Clickhouse\Query\QueryStatistic;
 use Tinderbox\ClickhouseBuilder\Query\BaseBuilder;
+use Tinderbox\ClickhouseBuilder\Query\Expression;
 use Tinderbox\ClickhouseBuilder\Query\Grammar;
 
 class Builder extends BaseBuilder
@@ -177,6 +179,32 @@ class Builder extends BaseBuilder
     public function delete()
     {
         return $this->connection->delete($this->grammar->compileDelete($this));
+    }
+
+    /**
+     * Paginate the given query.
+     *
+     * @param int $page
+     * @param int $perPage
+     *
+     * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
+     * @return LengthAwarePaginator
+     */
+    public function paginate(int $page = 1, int $perPage = 15): LengthAwarePaginator
+    {
+        $count = $this->getConnection()
+            ->table($this->cloneWithout(['columns' => []])
+            ->select(new Expression('1')))
+            ->count();
+
+        $results = $this->limit($perPage, $perPage * ($page - 1))->get();
+
+        return new LengthAwarePaginator(
+            $results,
+            $count,
+            $perPage,
+            $page
+        );
     }
 
     /**
