@@ -317,6 +317,12 @@ class GrammarTest extends TestCase
         $this->expectException(GrammarException::class);
 
         $grammar->compileSelect($builder);
+    
+        $this->expectException(BuilderException::class);
+    
+        $this->getBuilder()->from('table')
+            ->join('table2', 'any', 'left', ['column'])
+            ->join('table3', 'any', 'left', ['column']);
     }
 
     public function testCompileSelectFromNullTable()

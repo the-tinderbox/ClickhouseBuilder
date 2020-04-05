@@ -45,6 +45,20 @@ class JoinClause
     private $using;
 
     /**
+     * On condition for join.
+     *
+     * @var Expression|null
+     */
+    private $on;
+    
+    /**
+     * Alias for table or sub-query.
+     *
+     * @var Identifier|null
+     */
+    private $alias;
+
+    /**
      * Builder which initiated join.
      *
      * @var Builder
@@ -127,6 +141,33 @@ class JoinClause
 
         return $this;
     }
+
+    /**
+     * Add on condition statement.
+     *
+     * @param string $on
+     * @return JoinClause
+     */
+    public function addOn(string $on): self
+    {
+        $this->on = new Expression($on);
+
+        return $this;
+    }
+
+    /**
+     * Add alias for table or sub-query.
+     *
+     * @param string $alias
+     * @return JoinClause
+     */
+    public function addAlias(string $alias): self
+    {
+        $this->alias = $alias ? new Identifier($alias) : null;
+
+        return $this;
+    }
+
 
     /**
      * Set join strictness.
@@ -253,7 +294,27 @@ class JoinClause
     {
         return $this->using;
     }
-
+    
+    /**
+     * Get on condition statement.
+     *
+     * @return Expression|null
+     */
+    public function getOn(): ?Expression
+    {
+        return $this->on;
+    }
+    
+    /**
+     * Get table or sub-query alias.
+     *
+     * @return Identifier|null
+     */
+    public function getAlias(): ?Identifier
+    {
+        return $this->alias;
+    }
+    
     /**
      * Get flag to use or not to use GLOBAL option.
      *

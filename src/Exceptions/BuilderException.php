@@ -13,4 +13,9 @@ class BuilderException extends Exception
     {
         return new static("No structure provided for insert in memory table");
     }
+    
+    public static function multipleUsingJoinsNotSupported()
+    {
+        return new static("Multiple joins with using clause is not supported by Clickhouse, use joinOn() instead");
+    }
 }

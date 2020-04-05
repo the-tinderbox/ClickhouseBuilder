@@ -38,6 +38,12 @@ class JoinClauseTest extends TestCase
         $this->assertEquals(['column', 'another_column'], array_map(function ($using) {
             return (string) $using;
         }, $join->getUsing()));
+    
+        $join->addAlias('t2');
+        $this->assertEquals('t2', (string) $join->getAlias());
+    
+        $join->addOn('t1.id=t2.t2_id');
+        $this->assertEquals('t1.id=t2.t2_id', (string) $join->getOn());
 
         $join->strict(JoinStrict::ALL);
 

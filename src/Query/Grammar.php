@@ -10,7 +10,7 @@ use Tinderbox\ClickhouseBuilder\Query\Traits\FormatComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\FromComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\GroupsComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\HavingsComponentCompiler;
-use Tinderbox\ClickhouseBuilder\Query\Traits\JoinComponentCompiler;
+use Tinderbox\ClickhouseBuilder\Query\Traits\JoinsComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\LimitByComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\LimitComponentCompiler;
 use Tinderbox\ClickhouseBuilder\Query\Traits\OrdersComponentCompiler;
@@ -26,7 +26,7 @@ class Grammar
     use ColumnsComponentCompiler,
         FromComponentCompiler,
         ArrayJoinComponentCompiler,
-        JoinComponentCompiler,
+        JoinsComponentCompiler,
         TwoElementsLogicExpressionsCompiler,
         WheresComponentCompiler,
         PreWheresComponentCompiler,
@@ -45,7 +45,7 @@ class Grammar
         'from',
         'sample',
         'arrayJoin',
-        'join',
+        'joins',
         'prewheres',
         'wheres',
         'groups',
