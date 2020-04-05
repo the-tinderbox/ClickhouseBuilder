@@ -13,6 +13,7 @@ use Tinderbox\Clickhouse\Common\TempTable;
 use Tinderbox\Clickhouse\Query;
 use Tinderbox\Clickhouse\Server;
 use Tinderbox\Clickhouse\ServerProvider;
+use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\Builder;
 use Tinderbox\ClickhouseBuilder\Query\Column;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Operator;
@@ -313,73 +314,69 @@ class BuilderTest extends TestCase
 
     public function test_join_simple()
     {
-        $builder = $this->getBuilder();
-
-        $builder->from('table')->join('table2', 'any', 'left', ['column']);
+        $builder = $this->getBuilder()->from('table')->join('table2', 'any', 'left', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY LEFT JOIN `table2` USING `column`', $builder->toSql());
 
-        $builder->from('table')->join('table2', 'any', 'inner', ['column', 'column2']);
+        $builder = $this->getBuilder()->from('table')->join('table2', 'any', 'inner', ['column', 'column2']);
         $this->assertEquals('SELECT * FROM `table` ANY INNER JOIN `table2` USING `column`, `column2`', $builder->toSql());
 
-        $builder->from('table')->join('table2', 'all', 'left', ['column']);
+        $builder = $this->getBuilder()->from('table')->join('table2', 'all', 'left', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL LEFT JOIN `table2` USING `column`', $builder->toSql());
 
-        $builder->from('table')->join('table2', 'any', 'left', ['column']);
+        $builder = $this->getBuilder()->from('table')->join('table2', 'any', 'left', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY LEFT JOIN `table2` USING `column`', $builder->toSql());
 
-        $builder->from('table')->join('table2', 'any', 'left', ['column'], 'global');
+        $builder = $this->getBuilder()->from('table')->join('table2', 'any', 'left', ['column'], 'global');
         $this->assertEquals('SELECT * FROM `table` GLOBAL ANY LEFT JOIN `table2` USING `column`', $builder->toSql());
 
-        $builder->from('table')->leftJoin('table2', 'all', ['column']);
+        $builder = $this->getBuilder()->from('table')->leftJoin('table2', 'all', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL LEFT JOIN `table2` USING `column`', $builder->toSql());
 
-        $builder->from('table')->leftJoin('table2', 'any', ['column']);
+        $builder = $this->getBuilder()->from('table')->leftJoin('table2', 'any', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY LEFT JOIN `table2` USING `column`', $builder->toSql());
 
-        $builder->from('table')->innerJoin('table2', 'all', ['column']);
+        $builder = $this->getBuilder()->from('table')->innerJoin('table2', 'all', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL INNER JOIN `table2` USING `column`', $builder->toSql());
 
-        $builder->from('table')->innerJoin('table2', 'any', ['column']);
+        $builder = $this->getBuilder()->from('table')->innerJoin('table2', 'any', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY INNER JOIN `table2` USING `column`', $builder->toSql());
 
-        $builder->from('table')->anyLeftJoin('table2', ['column']);
+        $builder = $this->getBuilder()->from('table')->anyLeftJoin('table2', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY LEFT JOIN `table2` USING `column`', $builder->toSql());
 
-        $builder->from('table')->anyInnerJoin('table2', ['column']);
+        $builder = $this->getBuilder()->from('table')->anyInnerJoin('table2', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY INNER JOIN `table2` USING `column`', $builder->toSql());
 
-        $builder->from('table')->allLeftJoin('table2', ['column']);
+        $builder = $this->getBuilder()->from('table')->allLeftJoin('table2', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL LEFT JOIN `table2` USING `column`', $builder->toSql());
 
-        $builder->from('table')->allInnerJoin('table2', ['column']);
+        $builder = $this->getBuilder()->from('table')->allInnerJoin('table2', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL INNER JOIN `table2` USING `column`', $builder->toSql());
     }
 
     public function test_join_with_closure()
     {
-        $builder = $this->getBuilder();
-
-        $builder->from('table')->anyLeftJoin(function ($join) {
+        $this->getBuilder()->from('table')->anyLeftJoin(function ($join) {
             $this->assertInstanceOf(JoinClause::class, $join);
         });
 
-        $builder->from('table')->allLeftJoin(function ($join) {
+        $builder=$this->getBuilder()->from('table')->allLeftJoin(function ($join) {
             $join->table('table2')->using(['column'])->addUsing('column2');
         });
         $this->assertEquals('SELECT * FROM `table` ALL LEFT JOIN `table2` USING `column`, `column2`', $builder->toSql());
 
-        $builder->from('table')->anyInnerJoin(function ($join) {
+        $builder=$this->getBuilder()->from('table')->anyInnerJoin(function ($join) {
             $join->table('table2')->using('column');
         }, ['column2']);
         $this->assertEquals('SELECT * FROM `table` ANY INNER JOIN `table2` USING `column`, `column2`', $builder->toSql());
 
-        $builder->from('table')->allInnerJoin(function ($join) {
+        $builder=$this->getBuilder()->from('table')->allInnerJoin(function ($join) {
             $join->query()->select('column')->from('table');
             $join->addUsing('column', 'column2');
         });
         $this->assertEquals('SELECT * FROM `table` ALL INNER JOIN (SELECT `column` FROM `table`) USING `column`, `column2`', $builder->toSql());
 
-        $builder->from('table')->allInnerJoin(function ($join) {
+        $builder=$this->getBuilder()->from('table')->allInnerJoin(function ($join) {
             $join->query()->select('column')->from(function ($from) {
                 $from->query()->from('table2');
             });
@@ -388,6 +385,66 @@ class BuilderTest extends TestCase
 
         $builder = $this->getBuilder()->anyLeftJoin($this->getBuilder()->from('table'), ['column']);
         $this->assertEquals('SELECT * ANY LEFT JOIN (SELECT * FROM `table`) USING `column`', $builder->toSql());
+    }
+    
+    public function test_joinOn()
+    {
+        $builder = $this->getBuilder()
+            ->from('table')
+            ->joinOn('table2', null,'any', 'left', 'table.id = table2.t_id');
+        $this->assertEquals('SELECT * FROM `table` ANY LEFT JOIN `table2` ON table.id = table2.t_id', $builder->toSql());
+    
+        $builder = $this->getBuilder()
+            ->from('table')
+            ->joinOn('table2', null,'any', 'inner', 'table.id = table2.t_id');
+        $this->assertEquals('SELECT * FROM `table` ANY INNER JOIN `table2` ON table.id = table2.t_id', $builder->toSql());
+    
+        $builder = $this->getBuilder()
+            ->from('table')
+            ->joinOn('table2', null,'all', 'left', 'table.id = table2.t_id');
+        $this->assertEquals('SELECT * FROM `table` ALL LEFT JOIN `table2` ON table.id = table2.t_id', $builder->toSql());
+    
+        $builder = $this->getBuilder()->from('table')->joinOn('table2', null,'all', 'inner', 'table.id = table2.t_id');
+        $this->assertEquals('SELECT * FROM `table` ALL INNER JOIN `table2` ON table.id = table2.t_id', $builder->toSql());
+        
+        $builder = $this->getBuilder()
+            ->from('table')
+            ->joinOn('table2', null,'any', 'left', 'table.id = table2.t_id', 'global');
+        $this->assertEquals('SELECT * FROM `table` GLOBAL ANY LEFT JOIN `table2` ON table.id = table2.t_id', $builder->toSql());
+        
+        $builder = $this->getBuilder()
+            ->from('table')
+            ->alias('t1')
+            ->joinOn('table2', 't2','any', 'left', 't1.id = t2.t_id');
+        $this->assertEquals('SELECT * FROM `table` AS `t1` ANY LEFT JOIN `table2` AS `t2` ON t1.id = t2.t_id', $builder->toSql());
+        
+        $subQuery= $this->getBuilder()->from('table2');
+        $builder = $this->getBuilder()
+            ->from('table')
+            ->alias('t1')
+            ->joinOn($subQuery, 't2','any', 'left', 't1.id = t2.t_id');
+        $this->assertEquals('SELECT * FROM `table` AS `t1` ANY LEFT JOIN (SELECT * FROM `table2`) AS `t2` ON t1.id = t2.t_id', $builder->toSql());
+    
+        $builder = $this->getBuilder()
+            ->from('table')
+            ->alias('t1')
+            ->joinOn('table2', 't2','any', 'left', 't1.id = t2.t2_id')
+            ->joinOn('table3', 't3','any', 'left', 't1.id = t3.t3_id');
+        $this->assertEquals(
+            'SELECT * FROM `table` AS `t1` ANY LEFT JOIN `table2` AS `t2` ON t1.id = t2.t2_id ANY LEFT JOIN `table3` AS `t3` ON t1.id = t3.t3_id', $builder->toSql());
+    
+    
+        $subQuery1= $this->getBuilder()->from('table1');
+        $subQuery2= $this->getBuilder()->from('table2');
+        $subQuery3= $this->getBuilder()->from('table3');
+        $builder = $this->getBuilder()
+            ->from($subQuery1)->alias('t1')
+            ->joinOn($subQuery2, 't2','any', 'left', 't1.id = t2.t2_id')
+            ->joinOn($subQuery3, 't3','any', 'left', 't1.id = t3.t3_id');
+        $this->assertEquals(
+            'SELECT * FROM (SELECT * FROM `table1`) AS `t1` ANY LEFT JOIN (SELECT * FROM `table2`) AS `t2` ON t1.id = t2.t2_id ANY LEFT JOIN (SELECT * FROM `table3`) AS `t3` ON t1.id = t3.t3_id',
+            $builder->toSql()
+        );
     }
 
     public function test_preWheres()

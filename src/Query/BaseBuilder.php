@@ -7,6 +7,7 @@ use Tinderbox\Clickhouse\Common\File;
 use Tinderbox\Clickhouse\Common\FileFromString;
 use Tinderbox\Clickhouse\Common\TempTable;
 use Tinderbox\Clickhouse\Interfaces\FileInterface;
+use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinStrict;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinType;
@@ -37,11 +38,11 @@ abstract class BaseBuilder
     protected $sample;
     
     /**
-     * Join clause.
+     * Joins statements.
      *
-     * @var JoinClause
+     * @var JoinClause[]
      */
-    protected $join;
+    protected $joins = [];
     
     /**
      * Array join clause.
@@ -140,7 +141,7 @@ abstract class BaseBuilder
      * @var string
      */
     protected $onCluster;
-
+    
     /**
      * File representing values which should be inserted in table
      *
@@ -195,7 +196,7 @@ abstract class BaseBuilder
     /**
      * Clone the query without the given properties.
      *
-     * @param  array $except
+     * @param array $except
      *
      * @return static
      */
@@ -467,10 +468,10 @@ abstract class BaseBuilder
     /**
      * Add join to query.
      *
-     * @param string|self|Closure $table  Table to select from, also may be a sub-query
+     * @param string|self|Closure $table Table to select from, also may be a sub-query
      * @param string|null         $strict All or any
-     * @param string|null         $type   Left or inner
-     * @param array|null          $using  Columns to use for join
+     * @param string|null         $type Left or inner
+     * @param array|null          $using Columns to use for join
      * @param bool                $global Global distribution for right table
      *
      * @return static
@@ -482,13 +483,18 @@ abstract class BaseBuilder
         array $using = null,
         bool $global = false
     ) {
-        $this->join = new JoinClause($this);
+        if ($this->joins) {
+            throw  BuilderException::multipleUsingJoinsNotSupported();
+        }
+        
+        $join = new JoinClause($this);
+        $this->joins [] = $join;
         
         /*
          * If builder instance given, then we assume that sub-query should be used as table in join
          */
         if ($table instanceof BaseBuilder) {
-            $this->join->query($table);
+            $join->query($table);
             
             $this->files = array_merge($this->files, $table->getFiles());
         }
@@ -498,7 +504,7 @@ abstract class BaseBuilder
          * set up JoinClause object in callback
          */
         if ($table instanceof Closure) {
-            $table($this->join);
+            $table($join);
         }
         
         /*
@@ -506,28 +512,105 @@ abstract class BaseBuilder
          * then we assume that table name was given.
          */
         if (!$table instanceof Closure && !$table instanceof BaseBuilder) {
-            $this->join->table($table);
+            $join->table($table);
         }
         
         /*
          * If using was given, then merge it with using given before, in closure
          */
         if (!is_null($using)) {
-            $this->join->addUsing($using);
+            $join->addUsing($using);
         }
         
-        if (!is_null($strict) && is_null($this->join->getStrict())) {
-            $this->join->strict($strict);
+        if (!is_null($strict) && is_null($join->getStrict())) {
+            $join->strict($strict);
         }
         
-        if (!is_null($type) && is_null($this->join->getType())) {
-            $this->join->type($type);
+        if (!is_null($type) && is_null($join->getType())) {
+            $join->type($type);
         }
         
-        $this->join->distributed($global);
+        $join->distributed($global);
         
-        if (!is_null($this->join->getSubQuery())) {
-            $this->join->query($this->join->getSubQuery());
+        if (!is_null($join->getSubQuery())) {
+            $join->query($join->getSubQuery());
+        }
+        
+        return $this;
+    }
+    
+    
+    /**
+     * Add join to query with on condition.
+     *
+     * @param string|self|Closure $table Table to select from, also may be a sub-query
+     * @param string|null         $alias Alias for table or sub-query
+     * @param string|null         $strict All or any
+     * @param string|null         $type Left or inner
+     * @param string|null         $on Condition to use for join
+     * @param bool                $global Global distribution for right table
+     *
+     * @return static
+     */
+    public function joinOn(
+        $table,
+        string $alias = null,
+        string $strict = null,
+        string $type = null,
+        string $on = null,
+        bool $global = false
+    ) {
+        $join = new JoinClause($this);
+        $this->joins [] = $join;
+        
+        /*
+         * If builder instance given, then we assume that sub-query should be used as table in join
+         */
+        if ($table instanceof BaseBuilder) {
+            $join->query($table);
+            
+            $this->files = array_merge($this->files, $table->getFiles());
+        }
+        
+        /*
+         * If closure given, then we call it and pass From object as argument to
+         * set up JoinClause object in callback
+         */
+        if ($table instanceof Closure) {
+            $table($join);
+        }
+        
+        /*
+         * If given anything that is not builder instance or callback. For example, string,
+         * then we assume that table name was given.
+         */
+        if (!$table instanceof Closure && !$table instanceof BaseBuilder) {
+            $join->table($table);
+        }
+        
+        /*
+         * If using was given, then merge it with using given before, in closure
+         */
+        if (!is_null($on)) {
+            $join->addOn($on);
+        }
+        
+        if (!is_null($alias)) {
+            $join->addAlias($alias);
+        }
+        
+        if (!is_null($strict) && is_null($join->getStrict())) {
+            $join->strict($strict);
+        }
+        
+        if (!is_null($type) && is_null($join->getType())) {
+            $join->type($type);
+        }
+        
+        $join->distributed($global);
+        
+        if (!is_null($join->getSubQuery())) {
+            $join->query($join->getSubQuery());
         }
         
         return $this;
@@ -1092,17 +1175,17 @@ abstract class BaseBuilder
     public function whereIn($column, $values, $boolean = Operator:: AND, $not = false)
     {
         $type = $not ? Operator::NOT_IN : Operator::IN;
-
+        
         if (is_array($values)) {
             if (empty($values)) {
                 return $type === Operator::IN ? $this->where(new Expression('0 = 1')) : $this;
             }
-
+            
             $values = new Tuple($values);
         } elseif (is_string($values) && isset($this->files[$values])) {
             $values = new Identifier($values);
         }
-
+        
         return $this->where($column, $type, $values, $boolean);
     }
     
@@ -1530,10 +1613,10 @@ abstract class BaseBuilder
             $as = $attribute;
         }
         
-        $id = is_array($key) ? 'tuple('.implode(
+        $id = is_array($key) ? 'tuple(' . implode(
                 ', ',
                 array_map([$this->grammar, 'wrap'], $key)
-            ).')' : $this->grammar->wrap($key);
+            ) . ')' : $this->grammar->wrap($key);
         
         return $this
             ->addSelect(new Expression("dictGetString('{$dict}', '{$attribute}', {$id}) as `{$as}`"));
@@ -1911,13 +1994,13 @@ abstract class BaseBuilder
     }
     
     /**
-     * Get JoinClause.
+     * Get join statements.
      *
-     * @return JoinClause
+     * @return array
      */
-    public function getJoin(): ?JoinClause
+    public function getJoins(): array
     {
-        return $this->join;
+        return $this->joins;
     }
     
     /**
@@ -1973,7 +2056,7 @@ abstract class BaseBuilder
     /**
      * Add file with data to query
      *
-     * @param TempTable   $file
+     * @param TempTable $file
      *
      * @return $this
      */
@@ -1983,13 +2066,13 @@ abstract class BaseBuilder
         
         return $this;
     }
-
+    
     public function values($values)
     {
         $this->values = $this->prepareFile($values);
     }
-
-    public function getValues() : FileInterface
+    
+    public function getValues(): FileInterface
     {
         return $this->values;
     }
@@ -2019,7 +2102,7 @@ abstract class BaseBuilder
         
         return array_merge([$this], $result);
     }
-
+    
     /**
      * Prepares file
      *
@@ -2027,10 +2110,10 @@ abstract class BaseBuilder
      *
      * @return File|FileFromString
      */
-    protected function prepareFile($file) : FileInterface
+    protected function prepareFile($file): FileInterface
     {
         $file = file_from($file);
-
+        
         return $file;
     }
 }
