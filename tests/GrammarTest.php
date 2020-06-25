@@ -6,7 +6,6 @@ use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery as m;
 use PHPUnit\Framework\TestCase;
 use Tinderbox\Clickhouse\Client;
-use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Exceptions\GrammarException;
 use Tinderbox\ClickhouseBuilder\Query\Builder;
 use Tinderbox\ClickhouseBuilder\Query\Column;
