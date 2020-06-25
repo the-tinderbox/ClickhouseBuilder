@@ -24,7 +24,7 @@ class GrammarTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
-    public function getBuilder() : Builder
+    public function getBuilder(): Builder
     {
         return new Builder(m::mock(Client::class));
     }
@@ -266,7 +266,7 @@ class GrammarTest extends TestCase
         $select = $grammar->compileSelect($this->getBuilder()->anyLeftJoin('table', ['column'], true));
         $this->assertEquals('SELECT * GLOBAL ANY LEFT JOIN `table` USING `column`', $select);
 
-        $select = $grammar->compileSelect($this->getBuilder()->anyLeftJoin(function(JoinClause $join) {
+        $select = $grammar->compileSelect($this->getBuilder()->anyLeftJoin(function (JoinClause $join) {
             $join->table($this->getBuilder()->table('test')->select('column'));
         }, ['column'], true));
         $this->assertEquals('SELECT * GLOBAL ANY LEFT JOIN (SELECT `column` FROM `test`) USING `column`', $select);
