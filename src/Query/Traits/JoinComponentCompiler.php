@@ -36,6 +36,10 @@ trait JoinComponentCompiler
 
         $result[] = 'JOIN';
         $result[] = $this->wrap($join->getTable());
+        if ($join->getAlias()) {
+            $result[] = 'AS';
+            $result[] = $this->wrap($join->getAlias());
+        }
         $result[] = 'USING';
         $result[] = implode(', ', array_map(function ($column) {
             return $this->wrap($column);

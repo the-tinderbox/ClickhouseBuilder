@@ -59,6 +59,13 @@ class JoinClause
     private $subQuery;
 
     /**
+     * Join alias
+     *
+     * @var \Tinderbox\ClickhouseBuilder\Query\Identifier
+     */
+    private $alias;
+
+    /**
      * JoinClause constructor.
      *
      * @param BaseBuilder $query
@@ -237,11 +244,31 @@ class JoinClause
     /**
      * Get sub-query builder.
      *
+     * @param string|null $alias
+     *
      * @return BaseBuilder
      */
-    public function subQuery(): BaseBuilder
+    public function subQuery(string $alias = null): BaseBuilder
     {
+        if ($alias) {
+            $this->as($alias);
+        }
+
         return $this->subQuery = $this->query->newQuery();
+    }
+
+    /**
+     * Set join alias
+     *
+     * @param string $alias
+     *
+     * @return $this
+     */
+    public function as(string $alias)
+    {
+        $this->alias = new Identifier($alias);
+
+        return $this;
     }
 
     /**
@@ -302,6 +329,16 @@ class JoinClause
     public function getTable()
     {
         return $this->table;
+    }
+
+    /**
+     * Get alias.
+     *
+     * @return Identifier
+     */
+    public function getAlias() : ?Identifier
+    {
+        return $this->alias;
     }
 
     /**
