@@ -205,7 +205,7 @@ class GrammarTest extends TestCase
 
         $select = $grammar->compileSelect($this->getBuilder()->from('table')->groupBy([]));
         $this->assertEquals('SELECT * FROM `table`', $select);
-    
+
         $select = $grammar->compileSelect($this->getBuilder()->from('table')->groupBy('*'));
         $this->assertEquals('SELECT * FROM `table`', $select);
 
@@ -265,11 +265,16 @@ class GrammarTest extends TestCase
 
         $select = $grammar->compileSelect($this->getBuilder()->anyLeftJoin('table', ['column'], true));
         $this->assertEquals('SELECT * GLOBAL ANY LEFT JOIN `table` USING `column`', $select);
-    
+
         $select = $grammar->compileSelect($this->getBuilder()->anyLeftJoin(function(JoinClause $join) {
             $join->table($this->getBuilder()->table('test')->select('column'));
         }, ['column'], true));
         $this->assertEquals('SELECT * GLOBAL ANY LEFT JOIN (SELECT `column` FROM `test`) USING `column`', $select);
+
+        $select = $grammar->compileSelect($this->getBuilder()->anyLeftJoin(function (JoinClause $join) {
+            $join->subQuery('test')->table('table');
+        }, ['column']));
+        $this->assertEquals('SELECT * ANY LEFT JOIN (SELECT * FROM `table`) AS `test` USING `column`', $select);
 
         /*
          * With complex two elements logic expressions
@@ -343,20 +348,20 @@ class GrammarTest extends TestCase
         $sql = $grammar->compileDelete($builder);
 
         $this->assertEquals('ALTER TABLE `table` DELETE WHERE `column` = 1', $sql);
-    
+
         $builder = $this->getBuilder();
         $builder->from('table')->where('column', 1)->onCluster('test');
-    
+
         $sql = $grammar->compileDelete($builder);
-    
+
         $this->assertEquals('ALTER TABLE `table` ON CLUSTER test DELETE WHERE `column` = 1', $sql);
-    
+
         $builder = $this->getBuilder();
         $builder->from('table');
-        
+
         $this->expectException(GrammarException::class);
         $this->expectExceptionMessage('Missed where section for delete statement.');
-        
+
         $grammar->compileDelete($builder);
     }
 }

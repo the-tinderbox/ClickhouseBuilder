@@ -59,7 +59,7 @@ class JoinClause
     private $subQuery;
 
     /**
-     * Join alias
+     * Join alias.
      *
      * @var \Tinderbox\ClickhouseBuilder\Query\Identifier
      */
@@ -258,7 +258,7 @@ class JoinClause
     }
 
     /**
-     * Set join alias
+     * Set join alias.
      *
      * @param string $alias
      *
@@ -336,7 +336,7 @@ class JoinClause
      *
      * @return Identifier
      */
-    public function getAlias() : ?Identifier
+    public function getAlias(): ?Identifier
     {
         return $this->alias;
     }

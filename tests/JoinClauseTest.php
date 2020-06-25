@@ -61,6 +61,14 @@ class JoinClauseTest extends TestCase
 
         $join->distributed(true);
         $this->assertTrue($join->isDistributed());
+
+        $alias = 'test';
+        $join->as($alias);
+        $this->assertEquals($join->getAlias(), $alias);
+
+        $alias = 'test1';
+        $join->subQuery($alias);
+        $this->assertEquals($join->getAlias(), $alias);
     }
 
     public function testQuery()
