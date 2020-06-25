@@ -16,7 +16,7 @@ trait JoinComponentCompiler
      *
      * @return string
      */
-    protected function compileJoinComponent(Builder $query, JoinClause $join) : string
+    protected function compileJoinComponent(Builder $query, JoinClause $join): string
     {
         $this->verifyJoin($join);
 
@@ -26,16 +26,20 @@ trait JoinComponentCompiler
             $result[] = 'GLOBAL';
         }
 
-        if (! is_null($join->getStrict())) {
+        if (!is_null($join->getStrict())) {
             $result[] = $join->getStrict();
         }
 
-        if (! is_null($join->getType())) {
+        if (!is_null($join->getType())) {
             $result[] = $join->getType();
         }
 
         $result[] = 'JOIN';
         $result[] = $this->wrap($join->getTable());
+        if ($join->getAlias()) {
+            $result[] = 'AS';
+            $result[] = $this->wrap($join->getAlias());
+        }
         $result[] = 'USING';
         $result[] = implode(', ', array_map(function ($column) {
             return $this->wrap($column);
