@@ -357,7 +357,7 @@ SELECT dictGetString('dict', 'attribute', tuple(`column`, 'string value')) as `a
 Works like select.
 
 ```php
-$builder->from('table')->select('column', raw('count()')->groupBy('attribute');
+$builder->from('table')->select('column', raw('count()'))->groupBy('attribute');
 ```
 
 Final query will be like:
