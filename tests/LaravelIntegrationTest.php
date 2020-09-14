@@ -13,7 +13,6 @@ use Tinderbox\ClickhouseBuilder\Exceptions\NotSupportedException;
 use Tinderbox\ClickhouseBuilder\Integrations\Laravel\Builder;
 use Tinderbox\ClickhouseBuilder\Integrations\Laravel\ClickhouseServiceProvider;
 use Tinderbox\ClickhouseBuilder\Integrations\Laravel\Connection;
-use Tinderbox\ClickhouseBuilder\Query\Enums\Format;
 use Tinderbox\ClickhouseBuilder\Query\Expression;
 
 class LaravelIntegrationTest extends TestCase
@@ -74,6 +73,74 @@ class LaravelIntegrationTest extends TestCase
         ];
     }
 
+    public function getSimpleConfigWithProxy()
+    {
+        return [
+            'servers' => [
+                [
+                    'host'     => 'localhost',
+                    'port'     => 8123,
+                    'database' => 'default',
+                    'username' => 'default',
+                    'password' => '',
+                    'options'  => [
+                        'timeout'  => 10,
+                        'protocol' => 'http',
+                    ],
+                ]
+            ],
+            'proxy' => [
+                [
+                    'host'     => 'proxy_host',
+                    'port'     => 8123,
+                    'username' => 'default',
+                    'password' => '',
+                    'options'=> [
+                        'timeout'=> 10
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    public function getClusterConfigWithProxy()
+    {
+        return [
+            'clusters' => [
+                'test' => [
+                    'server-1' => [
+                        'host'     => 'localhost',
+                        'port'     => 8123,
+                        'database' => 'default',
+                        'username' => 'default',
+                        'password' => '',
+                    ],
+                    'server2'  => [
+                        'host'     => 'localhost',
+                        'port'     => 8123,
+                        'database' => 'default',
+                        'username' => 'default',
+                        'password' => '',
+                        'options'=> [
+                            'timeout'=> 10
+                        ]
+                    ],
+                ]
+            ],
+            'proxy' => [
+                [
+                    'host'     => 'proxy_host',
+                    'port'     => 8123,
+                    'username' => 'default',
+                    'password' => '',
+                    'options'=> [
+                        'timeout'=> 10
+                    ],
+                ],
+            ],
+        ];
+    }
+
     public function test_service_provider()
     {
         $clickHouseServiceProvider = new ClickhouseServiceProvider(Container::getInstance());
@@ -125,6 +192,29 @@ class LaravelIntegrationTest extends TestCase
         
         $this->assertNotSame($clusterServer, $secondClusterServer);
         $this->assertEquals($simpleClient->getServer(), $simpleClient->getServer());
+    }
+
+    public function test_connection_with_proxy()
+    {
+        $simpleConnection = new Connection($this->getSimpleConfigWithProxy());
+        $clusterConnection = new Connection($this->getClusterConfigWithProxy());
+
+        $simpleConnection->usingProxyServer();
+        $clusterConnection->onCluster('test')->usingProxyServer();
+
+        $simpleProxyServer = $simpleConnection->getClient()->getServer();
+        $clusterProxyServer = $clusterConnection->getClient()->getServer();
+
+        $simpleConnection->usingRandomServer();
+        $clusterConnection->onCluster('test')->usingRandomServer();
+
+        $simpleServer = $simpleConnection->getClient()->getServer();
+        $clusterServer = $clusterConnection->getClient()->getServer();
+
+        $this->assertNotSame($simpleProxyServer, $simpleServer);
+        $this->assertNotSame($clusterProxyServer, $clusterServer);
+        $this->assertEquals('proxy_host', $simpleProxyServer->getHost());
+        $this->assertEquals('proxy_host', $clusterProxyServer->getHost());
     }
 
     public function test_connection_get_config()

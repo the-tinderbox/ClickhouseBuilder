@@ -330,6 +330,9 @@ class BuilderTest extends TestCase
         $builder->from('table')->join('table2', 'any', 'left', ['column'], 'global');
         $this->assertEquals('SELECT * FROM `table` GLOBAL ANY LEFT JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder->from('table')->join('table2', 'any', 'left', ['column'], 'global', 'table3');
+        $this->assertEquals('SELECT * FROM `table` GLOBAL ANY LEFT JOIN `table2` AS `table3` USING `column`', $builder->toSql());
+
         $builder->from('table')->leftJoin('table2', 'all', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL LEFT JOIN `table2` USING `column`', $builder->toSql());
 
@@ -615,6 +618,12 @@ class BuilderTest extends TestCase
         $builder->addFile(new TempTable('_numbers', '', ['number' => 'UInt64']))->select('column')->from('table')->whereGlobalIn('column', '_numbers');
 
         $this->assertEquals('SELECT `column` FROM `table` WHERE `column` GLOBAL IN `_numbers`', $builder->toSql());
+
+        $builder = $this->getBuilder()->from('table')->whereIn('column', []);
+        $this->assertEquals('SELECT * FROM `table` WHERE 0 = 1', $builder->toSql());
+
+        $builder = $this->getBuilder()->from('table')->whereNotIn('column', []);
+        $this->assertEquals('SELECT * FROM `table`', $builder->toSql());
     }
 
     public function test_where_between()

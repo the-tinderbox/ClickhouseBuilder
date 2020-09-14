@@ -175,8 +175,6 @@ abstract class BaseBuilder
     /**
      * Returns query for count total rows without limit
      *
-     * @param string $column
-     *
      * @return static
      */
     public function getCountQuery()
@@ -187,9 +185,7 @@ abstract class BaseBuilder
             $without['orders'] = [];
         }
         
-        $builder = $this->cloneWithout($without)->select(raw('count() as `count`'));
-        
-        return $builder;
+        return $this->cloneWithout($without)->select(raw('count() as `count`'));
     }
     
     /**
@@ -472,6 +468,7 @@ abstract class BaseBuilder
      * @param string|null         $type   Left or inner
      * @param array|null          $using  Columns to use for join
      * @param bool                $global Global distribution for right table
+     * @param string|null         $alias  Alias of joined table or sub-query
      *
      * @return static
      */
@@ -480,7 +477,8 @@ abstract class BaseBuilder
         string $strict = null,
         string $type = null,
         array $using = null,
-        bool $global = false
+        bool $global = false,
+        ?string $alias = null
     ) {
         $this->join = new JoinClause($this);
         
@@ -523,6 +521,10 @@ abstract class BaseBuilder
         if (!is_null($type) && is_null($this->join->getType())) {
             $this->join->type($type);
         }
+
+        if (!is_null($alias)) {
+            $this->join->as($alias);
+        }
         
         $this->join->distributed($global);
         
@@ -542,12 +544,13 @@ abstract class BaseBuilder
      * @param string|null         $strict
      * @param array|null          $using
      * @param bool                $global
+     * @param string|null         $alias
      *
      * @return static
      */
-    public function leftJoin($table, string $strict = null, array $using = null, bool $global = false)
+    public function leftJoin($table, string $strict = null, array $using = null, bool $global = false, ?string $alias = null)
     {
-        return $this->join($table, $strict ?? JoinStrict::ALL, JoinType::LEFT, $using, $global);
+        return $this->join($table, $strict ?? JoinStrict::ALL, JoinType::LEFT, $using, $global, $alias);
     }
     
     /**
@@ -559,12 +562,13 @@ abstract class BaseBuilder
      * @param string|null         $strict
      * @param array|null          $using
      * @param bool                $global
+     * @param string|null         $alias
      *
      * @return static
      */
-    public function innerJoin($table, string $strict = null, array $using = null, bool $global = false)
+    public function innerJoin($table, string $strict = null, array $using = null, bool $global = false, ?string $alias = null)
     {
-        return $this->join($table, $strict ?? JoinStrict::ALL, JoinType::INNER, $using, $global);
+        return $this->join($table, $strict ?? JoinStrict::ALL, JoinType::INNER, $using, $global, $alias);
     }
     
     /**
@@ -575,12 +579,13 @@ abstract class BaseBuilder
      * @param string|self|Closure $table
      * @param array|null          $using
      * @param bool                $global
+     * @param string|null         $alias
      *
      * @return static
      */
-    public function anyLeftJoin($table, array $using = null, bool $global = false)
+    public function anyLeftJoin($table, array $using = null, bool $global = false, ?string $alias = null)
     {
-        return $this->join($table, JoinStrict::ANY, JoinType::LEFT, $using, $global);
+        return $this->join($table, JoinStrict::ANY, JoinType::LEFT, $using, $global, $alias);
     }
     
     /**
@@ -591,12 +596,13 @@ abstract class BaseBuilder
      * @param string|self|Closure $table
      * @param array|null          $using
      * @param bool                $global
+     * @param string|null         $alias
      *
      * @return static
      */
-    public function allLeftJoin($table, array $using = null, bool $global = false)
+    public function allLeftJoin($table, array $using = null, bool $global = false, ?string $alias = null)
     {
-        return $this->join($table, JoinStrict::ALL, JoinType::LEFT, $using, $global);
+        return $this->join($table, JoinStrict::ALL, JoinType::LEFT, $using, $global, $alias);
     }
     
     /**
@@ -607,12 +613,13 @@ abstract class BaseBuilder
      * @param string|self|Closure $table
      * @param array|null          $using
      * @param bool                $global
+     * @param string|null         $alias
      *
      * @return static
      */
-    public function anyInnerJoin($table, array $using = null, bool $global = false)
+    public function anyInnerJoin($table, array $using = null, bool $global = false, ?string $alias = null)
     {
-        return $this->join($table, JoinStrict::ANY, JoinType::INNER, $using, $global);
+        return $this->join($table, JoinStrict::ANY, JoinType::INNER, $using, $global, $alias);
     }
     
     /**
@@ -623,12 +630,13 @@ abstract class BaseBuilder
      * @param string|self|Closure $table
      * @param array|null          $using
      * @param bool                $global
+     * @param string|null         $alias
      *
      * @return static
      */
-    public function allInnerJoin($table, array $using = null, bool $global = false)
+    public function allInnerJoin($table, array $using = null, bool $global = false, ?string $alias = null)
     {
-        return $this->join($table, JoinStrict::ALL, JoinType::INNER, $using, $global);
+        return $this->join($table, JoinStrict::ALL, JoinType::INNER, $using, $global, $alias);
     }
     
     /**
@@ -1799,6 +1807,7 @@ abstract class BaseBuilder
     {
         return array_map(
             function ($query) {
+                /** @var self $query */
                 return ['query' => $query->toSql(), 'files' => $query->getFiles()];
             },
             $this->getAsyncQueries()
@@ -1814,6 +1823,7 @@ abstract class BaseBuilder
     {
         return array_map(
             function ($query) {
+                /** @var self $query */
                 return $query->toQuery();
             },
             $this->getAsyncQueries()

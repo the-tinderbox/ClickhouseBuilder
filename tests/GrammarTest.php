@@ -265,6 +265,9 @@ class GrammarTest extends TestCase
         $select = $grammar->compileSelect($this->getBuilder()->anyLeftJoin('table', ['column'], true));
         $this->assertEquals('SELECT * GLOBAL ANY LEFT JOIN `table` USING `column`', $select);
 
+        $select = $grammar->compileSelect($this->getBuilder()->anyLeftJoin('table', ['column'], true, 'another_table'));
+        $this->assertEquals('SELECT * GLOBAL ANY LEFT JOIN `table` AS `another_table` USING `column`', $select);
+
         $select = $grammar->compileSelect($this->getBuilder()->anyLeftJoin(function (JoinClause $join) {
             $join->table($this->getBuilder()->table('test')->select('column'));
         }, ['column'], true));

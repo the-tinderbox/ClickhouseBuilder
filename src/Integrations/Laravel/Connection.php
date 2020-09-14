@@ -187,6 +187,10 @@ class Connection extends \Illuminate\Database\Connection
             $serverProvider->addServer($this->assembleServer($server));
         }
 
+        foreach ($config['proxy'] ?? [] as $proxyServer) {
+            $serverProvider->addProxyServer($this->assembleServer($proxyServer));
+        }
+
         return $serverProvider;
     }
     
@@ -548,6 +552,18 @@ class Connection extends \Illuminate\Database\Connection
     public function usingRandomServer(): self
     {
         $this->getClient()->usingRandomServer();
+        
+        return $this;
+    }
+
+    /**
+     * Choose proxy server for queries.
+     *
+     * @return Connection
+     */
+    public function usingProxyServer(): self 
+    {
+        $this->getClient()->usingProxyServer();
         
         return $this;
     }
