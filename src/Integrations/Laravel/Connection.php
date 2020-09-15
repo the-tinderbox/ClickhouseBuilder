@@ -72,6 +72,9 @@ class Connection extends \Illuminate\Database\Connection
      * Config should be like this structure for server:
      *
      * @param array $config
+     *
+     * @throws \Tinderbox\Clickhouse\Exceptions\ClusterException
+     * @throws \Tinderbox\Clickhouse\Exceptions\ServerProviderException
      */
     public function __construct(array $config)
     {
@@ -159,6 +162,9 @@ class Connection extends \Illuminate\Database\Connection
      * @param array $config
      *
      * @return ServerProvider
+     *
+     * @throws \Tinderbox\Clickhouse\Exceptions\ClusterException
+     * @throws \Tinderbox\Clickhouse\Exceptions\ServerProviderException
      */
     protected function assembleServerProvider(array $config)
     {
@@ -279,6 +285,20 @@ class Connection extends \Illuminate\Database\Connection
     }
     
     /**
+     * Sets Clickhouse client.
+     *
+     * @var Client $client
+     *
+     * @return self
+     */
+    public function setClient(Client $client)
+    {
+        $this->client = $client;
+
+        return $this;
+    }
+    
+    /**
      * Returns Clickhouse client.
      *
      * @return Client
@@ -370,8 +390,6 @@ class Connection extends \Illuminate\Database\Connection
      * Get the number of active transactions.
      *
      * @throws NotSupportedException
-     *
-     * @return int
      */
     public function transactionLevel()
     {
@@ -415,11 +433,11 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Run async insert queries from local CSV or TSV files.
      *
-     * @param string $table
-     * @param array  $columns
-     * @param array  $files
-     * @param null   $format
-     * @param int    $concurrency
+     * @param string      $table
+     * @param array       $columns
+     * @param array       $files
+     * @param null|string $format
+     * @param int         $concurrency
      *
      * @return array
      */

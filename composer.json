@@ -37,7 +37,8 @@
     "phpunit/phpunit": "^6.1",
     "mockery/mockery": "^0.9.9",
     "illuminate/events": "5.*",
-    "illuminate/config": "5.*"
+    "illuminate/config": "5.*",
+    "illuminate/pagination": "5.*"
   },
   "extra": {
     "laravel": {

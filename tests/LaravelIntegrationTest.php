@@ -7,7 +7,15 @@ use Illuminate\Container\Container;
 use Illuminate\Database\DatabaseServiceProvider;
 use Illuminate\Events\EventServiceProvider;
 use PHPUnit\Framework\TestCase;
+use Tinderbox\Clickhouse\Client;
 use Tinderbox\Clickhouse\Common\FileFromString;
+use Tinderbox\Clickhouse\Interfaces\TransportInterface;
+use Tinderbox\Clickhouse\Query;
+use Tinderbox\Clickhouse\Query\QueryStatistic;
+use Tinderbox\Clickhouse\Query\Result;
+use Tinderbox\Clickhouse\Server;
+use Tinderbox\Clickhouse\ServerProvider;
+use Tinderbox\Clickhouse\Transport\HttpTransport;
 use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Exceptions\NotSupportedException;
 use Tinderbox\ClickhouseBuilder\Integrations\Laravel\Builder;
@@ -575,5 +583,76 @@ class LaravelIntegrationTest extends TestCase
         $result = $connection->table($connection->raw('numbers(2,10)'))->first();
         
         $this->assertEquals(2, $result['number']);
+    }
+
+    public function test_builder_connection()
+    {
+        $connection = new Connection($this->getSimpleConfig());
+        $builder = $connection->table($connection->raw('numbers(2,10)'));
+
+        $this->assertEquals($connection, $builder->getConnection());
+    }
+
+    public function test_builder_pagination()
+    {
+        $connection = new Connection($this->getSimpleConfig());
+        $paginator1 = $connection->table($connection->raw('numbers(0,10)'))->paginate(1, 2);
+
+        $this->assertEquals(2, $paginator1->count());
+        $this->assertEquals(2, $paginator1->perPage());
+        $this->assertEquals(1, $paginator1->currentPage());
+        $this->assertEquals(5, $paginator1->lastPage());
+        $this->assertEquals([['number' => 0], ['number' => 1]], $paginator1->values()->all());
+
+        $paginator2 = $connection->table($connection->raw('numbers(0,10)'))->paginate(3, 1);
+
+        $this->assertEquals(1, $paginator2->count());
+        $this->assertEquals(1, $paginator2->perPage());
+        $this->assertEquals(3, $paginator2->currentPage());
+        $this->assertEquals(10, $paginator2->lastPage());
+        $this->assertEquals([['number' => 2]], $paginator2->values()->all());
+    }
+
+    public function test_connection_set_client()
+    {
+        $connection = new Connection($this->getSimpleConfig());
+
+        $server = new Server('127.0.0.2');
+        $serverProvider = new ServerProvider();
+        $serverProvider->addServer($server);
+
+        $transport = new HttpTransport(new \GuzzleHttp\Client());
+
+        $client = new Client($serverProvider, $transport);
+        $connection->setClient($client);
+
+        $this->assertEquals($client, $connection->getClient());
+    }
+
+    public function test_builder_last_query_statistics()
+    {
+        $connection = new Connection($this->getSimpleConfig());
+
+        $server = new Server('127.0.0.1');
+        $serverProvider = new ServerProvider();
+        $serverProvider->addServer($server);
+
+        $transport = $this->createMock(TransportInterface::class);
+        $transport->method('read')->willReturn([
+            new Result(new Query($server, ''), [0, 1], new QueryStatistic(10, 20, 30, 40)),
+        ]);
+
+        $client = new Client($serverProvider, $transport);
+
+        $connection->setClient($client);
+
+        $connection->table('test')->get();
+
+        $lastQueryStatistic = $connection->getLastQueryStatistic();
+
+        $this->assertEquals(10, $lastQueryStatistic->getRows());
+        $this->assertEquals(20, $lastQueryStatistic->getBytes());
+        $this->assertEquals(30, $lastQueryStatistic->getTime());
+        $this->assertEquals(40, $lastQueryStatistic->getRowsBeforeLimitAtLeast());
     }
 }

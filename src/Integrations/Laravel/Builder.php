@@ -67,9 +67,9 @@ class Builder extends BaseBuilder
      * Performs compiled sql for count rows only. May be used for pagination
      * Works only without async queries.
      *
-     * @param string $column Column to pass into count() aggregate function
-     *
      * @return int|mixed
+     *
+     * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
      */
     public function count()
     {
@@ -87,6 +87,8 @@ class Builder extends BaseBuilder
      * Perform query and get first row
      *
      * @return mixed|null|\Tinderbox\Clickhouse\Query\Result
+     *
+     * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
      */
     public function first()
     {
@@ -144,6 +146,8 @@ class Builder extends BaseBuilder
      * @param array $values
      *
      * @return bool
+     *
+     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
      */
     public function insert(array $values)
     {
@@ -175,6 +179,8 @@ class Builder extends BaseBuilder
      * Performs ALTER TABLE `table` DELETE query.
      *
      * @return int
+     *
+     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
      */
     public function delete()
     {
