@@ -148,11 +148,11 @@ I think there no need for additional words)
 ### Joins
 
 ```php
-$builder->from('table')->join('another_table', 'any', 'left', ['column1', 'column2'], true);
+$builder->from('table')->join('another_table', 'any', 'left', ['column1', 'column2'], true, 'alias');
 ```
 
 ```sql
-SELECT * FROM `table` GLOBAL ANY LEFT JOIN `another_table` USING `column1`, `column2`
+SELECT * FROM `table` GLOBAL ANY LEFT JOIN `another_table` AS `alias` USING `column1`, `column2`
 ```
 
 For performing subquery as first argument you can pass closure or builder.
@@ -567,6 +567,41 @@ Example with cluster:
 ]
 ```
 
+Example with proxy server:
+
+```php
+'connections' => [
+    'clickhouse' => [
+        'driver' => 'clickhouse',
+        'servers' => [
+            [
+                'host' => 'ch-00.domain.com',
+                'port' => '',
+                'database' => '',
+                'username' => '',
+                'password' => '',
+                'options' => [
+                    'timeout' => 10,
+                    'protocol' => 'https'
+                ],
+            ],
+        ],
+        'proxy' => [
+            [
+                'host' => 'proxy.ch.domain.com',
+                'port' => '',
+                'username' => '',
+                'password' => '',
+                'options' => [
+                    'timeout' => 10,
+                    'protocol' => 'https'
+                ],
+            ],
+        ],
+    ],
+]
+```
+
 Choose server without cluster:
 
 ```php
@@ -583,6 +618,12 @@ Choose cluster:
 
 ```php
 DB::connection('clickhouse')->onCluster('test')->select(...);
+```
+
+Use proxy server:
+
+```php
+DB::connection('clickhouse')->usingProxyServer();
 ```
 
 You can use both `servers` and `clusters` config directives and choose on which server
