@@ -522,7 +522,7 @@ abstract class BaseBuilder
             $this->join->type($type);
         }
 
-        if (!is_null($alias)) {
+        if (!is_null($alias) && is_null($this->join->getAlias())) {
             $this->join->as($alias);
         }
 

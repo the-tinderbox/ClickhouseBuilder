@@ -85,6 +85,12 @@ class JoinClause
     public function table($table): self
     {
         if (is_string($table)) {
+            if (strpos(strtolower($table), ' as ') !== false) {
+                list($table, $alias) = array_map('trim', preg_split('/\s+as\s+/i', $table));
+
+                $this->as($alias);
+            }
+
             $table = new Identifier($table);
         } elseif ($table instanceof BaseBuilder) {
             $table = new Expression("({$table->toSql()})");

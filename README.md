@@ -567,7 +567,7 @@ Example with cluster:
 ]
 ```
 
-Example with proxy server:
+Example with server with tag:
 
 ```php
 'connections' => [
@@ -582,14 +582,16 @@ Example with proxy server:
                 'password' => '',
                 'options' => [
                     'timeout' => 10,
-                    'protocol' => 'https'
+                    'protocol' => 'https',
+                    'tags' => [
+                        'tag'
+                    ],
                 ],
             ],
-        ],
-        'proxy' => [
             [
-                'host' => 'proxy.ch.domain.com',
+                'host' => 'ch-01.domain.com',
                 'port' => '',
+                'database' => '',
                 'username' => '',
                 'password' => '',
                 'options' => [
@@ -620,10 +622,10 @@ Choose cluster:
 DB::connection('clickhouse')->onCluster('test')->select(...);
 ```
 
-Use proxy server:
+Use server with tag:
 
 ```php
-DB::connection('clickhouse')->usingProxyServer()->select(...);
+DB::connection('clickhouse')->usingServerWithTag('tag')->select(...);
 ```
 
 You can use both `servers` and `clusters` config directives and choose on which server

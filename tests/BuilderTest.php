@@ -333,6 +333,12 @@ class BuilderTest extends TestCase
         $builder->from('table')->join('table2', 'any', 'left', ['column'], 'global', 'table3');
         $this->assertEquals('SELECT * FROM `table` GLOBAL ANY LEFT JOIN `table2` AS `table3` USING `column`', $builder->toSql());
 
+        $builder->from('table')->join('table2 as table3', 'any', 'left', ['column'], 'global', 'table4');
+        $this->assertEquals('SELECT * FROM `table` GLOBAL ANY LEFT JOIN `table2` AS `table3` USING `column`', $builder->toSql());
+
+        $builder->from('table')->join('table2 as table3 as table', 'any', 'left', ['column'], 'global', 'table4');
+        $this->assertEquals('SELECT * FROM `table` GLOBAL ANY LEFT JOIN `table2` AS `table3` USING `column`', $builder->toSql());
+
         $builder->from('table')->leftJoin('table2', 'all', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL LEFT JOIN `table2` USING `column`', $builder->toSql());
 

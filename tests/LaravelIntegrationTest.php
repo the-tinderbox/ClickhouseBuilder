@@ -81,68 +81,56 @@ class LaravelIntegrationTest extends TestCase
         ];
     }
 
-    public function getSimpleConfigWithProxy()
+    public function getSimpleConfigWithServerWithTag()
     {
         return [
             'servers' => [
                 [
-                    'host'     => 'localhost',
+                    'host'     => 'with-tag',
                     'port'     => 8123,
                     'database' => 'default',
                     'username' => 'default',
                     'password' => '',
                     'options'  => [
-                        'timeout'  => 10,
-                        'protocol' => 'http',
+                        'tags' => [
+                            'tag',
+                        ],
                     ],
                 ],
-            ],
-            'proxy' => [
                 [
-                    'host'     => 'proxy_host',
+                    'host'     => 'without-tag',
                     'port'     => 8123,
+                    'database' => 'default',
                     'username' => 'default',
                     'password' => '',
-                    'options'  => [
-                        'timeout' => 10,
-                    ],
                 ],
             ],
         ];
     }
 
-    public function getClusterConfigWithProxy()
+    public function getClusterConfigWithServerWithTag()
     {
         return [
             'clusters' => [
                 'test' => [
-                    'server-1' => [
-                        'host'     => 'localhost',
-                        'port'     => 8123,
-                        'database' => 'default',
-                        'username' => 'default',
-                        'password' => '',
-                    ],
-                    'server2'  => [
-                        'host'     => 'localhost',
+                    [
+                        'host'     => 'with-tag',
                         'port'     => 8123,
                         'database' => 'default',
                         'username' => 'default',
                         'password' => '',
                         'options'  => [
-                            'timeout' => 10,
+                            'tags' => [
+                                'tag',
+                            ],
                         ],
                     ],
-                ],
-            ],
-            'proxy' => [
-                [
-                    'host'     => 'proxy_host',
-                    'port'     => 8123,
-                    'username' => 'default',
-                    'password' => '',
-                    'options'  => [
-                        'timeout' => 10,
+                    [
+                        'host'     => 'without-tag',
+                        'port'     => 8123,
+                        'database' => 'default',
+                        'username' => 'default',
+                        'password' => '',
                     ],
                 ],
             ],
@@ -202,16 +190,16 @@ class LaravelIntegrationTest extends TestCase
         $this->assertEquals($simpleClient->getServer(), $simpleClient->getServer());
     }
 
-    public function test_connection_with_proxy()
+    public function test_connection_with_server_with_tags()
     {
-        $simpleConnection = new Connection($this->getSimpleConfigWithProxy());
-        $clusterConnection = new Connection($this->getClusterConfigWithProxy());
+        $simpleConnection = new Connection($this->getSimpleConfigWithServerWithTag());
+        $clusterConnection = new Connection($this->getClusterConfigWithServerWithTag());
 
-        $simpleConnection->usingProxyServer();
-        $clusterConnection->onCluster('test')->usingProxyServer();
+        $simpleConnection->usingServerWithTag('tag');
+        $clusterConnection->onCluster('test')->usingServerWithTag('tag');
 
-        $simpleProxyServer = $simpleConnection->getClient()->getServer();
-        $clusterProxyServer = $clusterConnection->getClient()->getServer();
+        $simpleServerWithTag = $simpleConnection->getClient()->getServer();
+        $clusterServerWithTag = $clusterConnection->getClient()->getServer();
 
         $simpleConnection->usingRandomServer();
         $clusterConnection->onCluster('test')->usingRandomServer();
@@ -219,10 +207,17 @@ class LaravelIntegrationTest extends TestCase
         $simpleServer = $simpleConnection->getClient()->getServer();
         $clusterServer = $clusterConnection->getClient()->getServer();
 
-        $this->assertNotSame($simpleProxyServer, $simpleServer);
-        $this->assertNotSame($clusterProxyServer, $clusterServer);
-        $this->assertEquals('proxy_host', $simpleProxyServer->getHost());
-        $this->assertEquals('proxy_host', $clusterProxyServer->getHost());
+        while ($simpleServer === $simpleServerWithTag) {
+            $simpleServer = $simpleConnection->getClient()->getServer();
+        }
+
+        while ($clusterServer === $simpleServerWithTag) {
+            $clusterServer = $clusterConnection->getClient()->getServer();
+        }
+
+        $this->assertTrue(true);
+        $this->assertEquals('with-tag', $simpleServerWithTag->getHost());
+        $this->assertEquals('with-tag', $clusterServerWithTag->getHost());
     }
 
     public function test_connection_get_config()

@@ -195,10 +195,6 @@ class Connection extends \Illuminate\Database\Connection
             $serverProvider->addServer($this->assembleServer($server));
         }
 
-        foreach ($config['proxy'] ?? [] as $proxyServer) {
-            $serverProvider->addProxyServer($this->assembleServer($proxyServer));
-        }
-
         return $serverProvider;
     }
 
@@ -221,11 +217,18 @@ class Connection extends \Illuminate\Database\Connection
 
         if (isset($options)) {
             $protocol = $options['protocol'] ?? null;
+            $tags = $options['tags'] ?? [];
 
             $options = new ServerOptions();
 
             if (!is_null($protocol)) {
                 $options->setProtocol($protocol);
+            }
+
+            if (is_array($tags) && !empty($tags)) {
+                foreach ($tags as $tag) {
+                    $options->addTag($tag);
+                }
             }
         }
 
@@ -577,13 +580,15 @@ class Connection extends \Illuminate\Database\Connection
     }
 
     /**
-     * Choose proxy server for queries.
+     * Choose server with tag for queries.
+     *
+     * @param string $tag
      *
      * @return Connection
      */
-    public function usingProxyServer(): self
+    public function usingServerWithTag(string $tag): self
     {
-        $this->getClient()->usingProxyServer();
+        $this->getClient()->usingServerWithTag($tag);
 
         return $this;
     }
