@@ -16,7 +16,7 @@ trait FromComponentCompiler
      *
      * @return string
      */
-    public function compileFromComponent(BaseBuilder $builder, From $from) : string
+    public function compileFromComponent(BaseBuilder $builder, From $from): string
     {
         $this->verifyFrom($from);
 

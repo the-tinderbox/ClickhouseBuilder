@@ -170,7 +170,7 @@ class Grammar
             $tableName = (string) $tableName;
         }
 
-        return 'DROP TABLE '.($ifExists ? "IF EXISTS " : "")."{$tableName}";
+        return 'DROP TABLE '.($ifExists ? 'IF EXISTS ' : '')."{$tableName}";
     }
 
     /**
@@ -194,9 +194,9 @@ class Grammar
     public function compileInsertValues($values)
     {
         return implode(', ', array_map(function ($value) {
-            return '(' . implode(', ', array_map(function ($value) {
+            return '('.implode(', ', array_map(function ($value) {
                 return $this->wrap($value);
-            }, $value)) . ')';
+            }, $value)).')';
         }, $values));
     }
 

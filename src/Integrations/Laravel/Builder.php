@@ -50,7 +50,7 @@ class Builder extends BaseBuilder
             return $this->connection->select($this->toSql(), [], $this->getFiles());
         }
     }
-    
+
     /**
      * Returns Query instance.
      *

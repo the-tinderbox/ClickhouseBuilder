@@ -487,7 +487,7 @@ abstract class BaseBuilder
          */
         if ($table instanceof BaseBuilder) {
             $this->join->query($table);
-            
+
             $this->files = array_merge($this->files, $table->getFiles());
         }
 
@@ -1232,7 +1232,7 @@ abstract class BaseBuilder
     public function whereBetween($column, array $values, $boolean = Operator:: AND, $not = false)
     {
         $operator = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
-        
+
         return $this->where($column, $operator, [$values[0], $values[1]], $boolean);
     }
 
@@ -1249,7 +1249,7 @@ abstract class BaseBuilder
     public function whereBetweenColumns($column, array $values, $boolean = Operator:: AND, $not = false)
     {
         $type = $not ? Operator::NOT_BETWEEN : Operator::BETWEEN;
-        
+
         return $this->where($column, $type, [new Identifier($values[0]), new Identifier($values[1])], $boolean);
     }
 

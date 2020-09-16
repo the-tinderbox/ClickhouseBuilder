@@ -350,11 +350,11 @@ class LaravelIntegrationTest extends TestCase
 
         $this->assertEquals(3, count($result));
     }
-    
+
     /*
      * Not supported functions
      */
-    
+
     public function test_connection_begin_transaction()
     {
         $connection = new Connection($this->getSimpleConfig());
@@ -375,7 +375,7 @@ class LaravelIntegrationTest extends TestCase
         $this->expectException(NotSupportedException::class);
         $connection->commit();
     }
-    
+
     public function test_last_query_statistic()
     {
         $connection = new Connection($this->getSimpleConfig());
@@ -542,7 +542,7 @@ class LaravelIntegrationTest extends TestCase
 
         $this->assertFalse($connection->table('table')->insert([]));
     }
-    
+
     public function test_builder_delete()
     {
         $connection = new Connection($this->getSimpleConfig());
@@ -550,7 +550,7 @@ class LaravelIntegrationTest extends TestCase
         $connection->statement('create table test (number UInt64) engine = MergeTree order by number');
 
         $connection->table('test')->insertFiles(['number'], [
-            new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2')
+            new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2'),
         ]);
 
         /*
@@ -564,7 +564,7 @@ class LaravelIntegrationTest extends TestCase
 
         $this->assertEquals(2, $result[0]['count']);
     }
-    
+
     public function test_builder_count()
     {
         $connection = new Connection($this->getSimpleConfig());
@@ -576,7 +576,7 @@ class LaravelIntegrationTest extends TestCase
 
         $this->assertEquals(2, $result);
     }
-    
+
     public function test_builder_first()
     {
         $connection = new Connection($this->getSimpleConfig());

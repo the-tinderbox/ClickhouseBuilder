@@ -1010,7 +1010,7 @@ class BuilderTest extends TestCase
             $builder3,
         ], $sqls);
     }
-    
+
     protected function createBuilder()
     {
         $serverProvider = new ServerProvider();
@@ -1027,8 +1027,8 @@ class BuilderTest extends TestCase
         $builder->createTable('test', 'MergeTree order by number', [
             'number' => 'UInt64',
         ]);
-        
-        $builder->newQuery()->table('test')->insertFile(['number'],  new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2'));
+
+        $builder->newQuery()->table('test')->insertFile(['number'], new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2'));
     
         /*
          * We have to sleep for 3 seconds while mutation in progress
