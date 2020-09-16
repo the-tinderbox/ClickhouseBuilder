@@ -556,11 +556,11 @@ class Connection extends \Illuminate\Database\Connection
     /**
      * Choose cluster to perform queries.
      *
-     * @param string $clusterName
+     * @param string|null $clusterName
      *
      * @return Connection
      */
-    public function onCluster(string $clusterName): self
+    public function onCluster(?string $clusterName): self
     {
         $this->getClient()->onCluster($clusterName);
 
