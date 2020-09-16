@@ -623,7 +623,7 @@ DB::connection('clickhouse')->onCluster('test')->select(...);
 Use proxy server:
 
 ```php
-DB::connection('clickhouse')->usingProxyServer();
+DB::connection('clickhouse')->usingProxyServer()->select(...);
 ```
 
 You can use both `servers` and `clusters` config directives and choose on which server
