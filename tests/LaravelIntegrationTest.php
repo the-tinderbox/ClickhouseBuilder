@@ -646,9 +646,10 @@ class LaravelIntegrationTest extends TestCase
 
         $connection->setClient($client);
 
-        $connection->table('test')->get();
+        $builder = $connection->table('test');
+        $builder->get();
 
-        $lastQueryStatistic = $connection->getLastQueryStatistic();
+        $lastQueryStatistic = $builder->getLastQueryStatistics();
 
         $this->assertEquals(10, $lastQueryStatistic->getRows());
         $this->assertEquals(20, $lastQueryStatistic->getBytes());
