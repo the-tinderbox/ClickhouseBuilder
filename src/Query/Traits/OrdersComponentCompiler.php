@@ -14,7 +14,7 @@ trait OrdersComponentCompiler
      *
      * @return string
      */
-    public function compileOrdersComponent(Builder $builder, array $orders) : string
+    public function compileOrdersComponent(Builder $builder, array $orders): string
     {
         $columns = [];
 

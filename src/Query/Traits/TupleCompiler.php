@@ -13,7 +13,7 @@ trait TupleCompiler
      *
      * @return string
      */
-    public function compileTuple(Tuple $tuple) : string
+    public function compileTuple(Tuple $tuple): string
     {
         return implode(', ', array_map([$this, 'wrap'], $tuple->getElements()));
     }

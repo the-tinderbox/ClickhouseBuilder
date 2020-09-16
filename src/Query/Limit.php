@@ -44,7 +44,7 @@ class Limit
      *
      * @return int
      */
-    public function getLimit() : ?int
+    public function getLimit(): ?int
     {
         return $this->limit;
     }
@@ -54,7 +54,7 @@ class Limit
      *
      * @return int
      */
-    public function getOffset() : ?int
+    public function getOffset(): ?int
     {
         return $this->offset;
     }
@@ -64,7 +64,7 @@ class Limit
      *
      * @return array
      */
-    public function getBy() : array
+    public function getBy(): array
     {
         return $this->by;
     }

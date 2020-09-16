@@ -14,7 +14,7 @@ trait SampleComponentCompiler
      *
      * @return string
      */
-    public function compileSampleComponent(Builder $builder, float $sample = null) : string
+    public function compileSampleComponent(Builder $builder, float $sample = null): string
     {
         return "SAMPLE {$sample}";
     }

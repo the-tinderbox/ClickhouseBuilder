@@ -17,10 +17,10 @@ trait ColumnsComponentCompiler
      *
      * @return string
      */
-    private function compileColumnsComponent(BaseBuilder $builder, array $columns) : string
+    private function compileColumnsComponent(BaseBuilder $builder, array $columns): string
     {
         $compiledColumns = [];
-        
+
         foreach ($columns as $column) {
             $compiledColumns[] = $this->compileColumn($column);
         }

@@ -15,7 +15,7 @@ trait GroupsComponentCompiler
      *
      * @return string
      */
-    private function compileGroupsComponent(Builder $builder, array $columns) : string
+    private function compileGroupsComponent(Builder $builder, array $columns): string
     {
         $compiledColumns = [];
         

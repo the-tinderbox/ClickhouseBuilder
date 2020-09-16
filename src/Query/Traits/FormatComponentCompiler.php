@@ -14,7 +14,7 @@ trait FormatComponentCompiler
      *
      * @return string
      */
-    public function compileFormatComponent(Builder $builder, $format) : string
+    public function compileFormatComponent(Builder $builder, $format): string
     {
         return "FORMAT {$format}";
     }

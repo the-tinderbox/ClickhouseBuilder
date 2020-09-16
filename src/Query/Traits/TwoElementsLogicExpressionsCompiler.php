@@ -18,7 +18,7 @@ trait TwoElementsLogicExpressionsCompiler
      *
      * @return string
      */
-    private function compileTwoElementLogicExpressions(array $wheres) : string
+    private function compileTwoElementLogicExpressions(array $wheres): string
     {
         $result = [];
 

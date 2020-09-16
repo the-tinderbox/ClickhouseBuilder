@@ -14,7 +14,7 @@ class Builder extends BaseBuilder
      * @var \Tinderbox\Clickhouse\Client
      */
     protected $client;
-    
+
     /**
      * Builder constructor.
      *
@@ -41,9 +41,9 @@ class Builder extends BaseBuilder
             return $this->client->readOne($this->toSql(), $this->getFiles(), $settings);
         }
     }
-    
+
     /**
-     * Returns Query instance
+     * Returns Query instance.
      *
      * @param array $settings
      *
@@ -53,7 +53,7 @@ class Builder extends BaseBuilder
     {
         return new Query($this->client->getServer(), $this->toSql(), $this->getFiles(), $settings);
     }
-    
+
     /**
      * Performs compiled sql for count rows only. May be used for pagination
      * Works only without async queries.
@@ -64,14 +64,14 @@ class Builder extends BaseBuilder
     {
         $builder = $this->getCountQuery();
         $result = $builder->get();
-        
+
         if (!empty($this->groups)) {
             return count($result);
         } else {
             return $result[0]['count'] ?? 0;
         }
     }
-    
+
     /**
      * Makes clean instance of builder.
      *
@@ -85,12 +85,11 @@ class Builder extends BaseBuilder
     /**
      * Insert in table data from files.
      *
-     * @param array $columns
-     * @param array $files
+     * @param array  $columns
+     * @param array  $files
      * @param string $format
-     * @param int $concurrency
-     *
-     * @param array $settings
+     * @param int    $concurrency
+     * @param array  $settings
      *
      * @return array
      */
@@ -99,27 +98,26 @@ class Builder extends BaseBuilder
         foreach ($files as $i => $file) {
             $files[$i] = $this->prepareFile($file);
         }
-        
+
         return $this->client->writeFiles($this->getFrom()->getTable(), $columns, $files, $format, $settings, $concurrency);
     }
 
     /**
      * Insert in table data from files.
      *
-     * @param array $columns
+     * @param array                                                 $columns
      * @param string|\Tinderbox\Clickhouse\Interfaces\FileInterface $file
-     * @param string $format
-     *
-     * @param array $settings
+     * @param string                                                $format
+     * @param array                                                 $settings
      *
      * @return bool
      */
     public function insertFile(array $columns, $file, string $format = Format::CSV, array $settings = []): bool
     {
         $file = $this->prepareFile($file);
-        
+
         $result = $this->client->writeFiles($this->getFrom()->getTable(), $columns, [$file], $format, $settings);
-        
+
         return $result[0][0];
     }
 
@@ -137,7 +135,7 @@ class Builder extends BaseBuilder
         if (empty($values)) {
             return false;
         }
-        
+
         if (!is_array(reset($values))) {
             $values = [$values];
         } /*
@@ -154,9 +152,11 @@ class Builder extends BaseBuilder
 
         return $this->client->writeOne($this->grammar->compileInsert($this, $values));
     }
-    
+
     /**
      * Performs ALTER TABLE `table` DELETE query.
+     *
+     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
      *
      * @return bool
      */
@@ -166,9 +166,9 @@ class Builder extends BaseBuilder
             $this->grammar->compileDelete($this)
         );
     }
-    
+
     /**
-     * Executes query to create table
+     * Executes query to create table.
      *
      * @param        $tableName
      * @param string $engine
@@ -180,9 +180,9 @@ class Builder extends BaseBuilder
     {
         return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure));
     }
-    
+
     /**
-     * Executes query to create table if table does not exists
+     * Executes query to create table if table does not exists.
      *
      * @param        $tableName
      * @param string $engine
@@ -194,12 +194,12 @@ class Builder extends BaseBuilder
     {
         return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, true));
     }
-    
+
     public function dropTable($tableName)
     {
         return $this->client->writeOne($this->grammar->compileDropTable($tableName));
     }
-    
+
     public function dropTableIfExists($tableName)
     {
         return $this->client->writeOne($this->grammar->compileDropTable($tableName, true));
