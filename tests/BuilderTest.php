@@ -792,6 +792,12 @@ class BuilderTest extends TestCase
         $this->assertEquals('SELECT * FROM `table` LIMIT 2, 1', $builder->toSql());
     }
 
+    public function test_totals()
+    {
+        $builder = $this->getBuilder()->from('table');
+        $this->assertEquals('SELECT * FROM `table` WITH TOTALS', $builder->toSql());
+    }
+
     public function test_unionAll()
     {
         $builder = $this->getBuilder()->from('table')->unionAll(function ($query) {
