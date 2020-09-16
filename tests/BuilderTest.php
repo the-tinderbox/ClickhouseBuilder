@@ -1029,7 +1029,7 @@ class BuilderTest extends TestCase
         ]);
 
         $builder->newQuery()->table('test')->insertFile(['number'], new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2'));
-    
+
         /*
          * We have to sleep for 3 seconds while mutation in progress
          */

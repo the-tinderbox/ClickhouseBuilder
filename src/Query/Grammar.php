@@ -245,6 +245,7 @@ class Grammar
             return array_map([$this, 'wrap'], $value);
         } elseif (is_string($value)) {
             $value = addslashes($value);
+
             return "'{$value}'";
         } elseif ($value instanceof Identifier) {
             $value = (string) $value;
