@@ -85,9 +85,9 @@ class JoinClause
     public function table($table): self
     {
         if (is_string($table)) {
-            if (strpos(strtolower($table), ' as ') !== false) {
-                list($table, $alias) = array_map('trim', preg_split('/\s+as\s+/i', $table));
+            list($table, $alias) = $this->decomposeJoinExpressionToTableAndAlias($table);
 
+            if (!is_null($alias)) {
                 $this->as($alias);
             }
 
@@ -366,5 +366,21 @@ class JoinClause
             },
             $array
         );
+    }
+
+    /**
+     * Tries to decompose string join expression to table name and alias.
+     *
+     * @param string $table
+     *
+     * @return array
+     */
+    private function decomposeJoinExpressionToTableAndAlias(string $table): array
+    {
+        if (strpos(strtolower($table), ' as ') !== false) {
+            return array_map('trim', preg_split('/\s+as\s+/i', $table));
+        }
+
+        return [$table, null];
     }
 }
