@@ -30,14 +30,15 @@
   "require": {
     "php": "~7.1",
     "myclabs/php-enum": "^1.5",
-    "the-tinderbox/clickhouse-php-client": "~2.0.0"
+    "the-tinderbox/clickhouse-php-client": "~2.1.0"
   },
   "require-dev": {
     "illuminate/database": "5.*",
     "phpunit/phpunit": "^6.1",
     "mockery/mockery": "^0.9.9",
     "illuminate/events": "5.*",
-    "illuminate/config": "5.*"
+    "illuminate/config": "5.*",
+    "illuminate/pagination": "5.*"
   },
   "extra": {
     "laravel": {

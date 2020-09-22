@@ -15,7 +15,7 @@ trait HavingsComponentCompiler
      *
      * @return string
      */
-    public function compileHavingsComponent(Builder $builder, array $havings) : string
+    public function compileHavingsComponent(Builder $builder, array $havings): string
     {
         $result = $this->compileTwoElementLogicExpressions($havings);
 

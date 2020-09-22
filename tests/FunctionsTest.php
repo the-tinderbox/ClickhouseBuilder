@@ -65,7 +65,7 @@ class FunctionsTest extends TestCase
         $this->assertInstanceOf(Expression::class, $expression);
     }
 
-    protected function putInTempFile(string $content) : string
+    protected function putInTempFile(string $content): string
     {
         $fileName = tempnam(sys_get_temp_dir(), 'builder_');
         file_put_contents($fileName, $content);
@@ -88,7 +88,7 @@ class FunctionsTest extends TestCase
             '1'.PHP_EOL.'2'.PHP_EOL,
             new FileFromString('3'.PHP_EOL.'4'.PHP_EOL),
             new File($realFiles[0]),
-            $realFiles[2]
+            $realFiles[2],
         ];
 
         $client->write([
@@ -141,7 +141,7 @@ class FunctionsTest extends TestCase
             new FileFromString('3'.PHP_EOL.'4'.PHP_EOL),
             new File($realFiles[0]),
             new TempTable('test', new File($realFiles[1]), ['number' => 'UInt64']),
-            $realFiles[2]
+            $realFiles[2],
         ];
 
         foreach ($files as $file) {

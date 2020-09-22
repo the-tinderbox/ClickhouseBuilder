@@ -14,7 +14,7 @@ trait ColumnCompiler
      *
      * @return string
      */
-    public function compileColumn(Column $column) : string
+    public function compileColumn(Column $column): string
     {
         $result = '';
 

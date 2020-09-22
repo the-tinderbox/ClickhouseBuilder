@@ -56,7 +56,7 @@ class From
      *
      * @return From
      */
-    public function table($table) : self
+    public function table($table): self
     {
         if (is_string($table)) {
             $table = new Identifier($table);
@@ -74,7 +74,7 @@ class From
      *
      * @return From
      */
-    public function as(string $alias) : self
+    public function as(string $alias): self
     {
         $this->alias = new Identifier($alias);
 
@@ -90,7 +90,7 @@ class From
      *
      * @return From
      */
-    public function final(bool $isFinal = true) : self
+    public function final(bool $isFinal = true): self
     {
         $this->final = $isFinal;
 
@@ -108,7 +108,7 @@ class From
      *
      * @return From
      */
-    public function remote(string $expression, string $database, string $table, string $user = null, string $password = null) : self
+    public function remote(string $expression, string $database, string $table, string $user = null, string $password = null): self
     {
         $remote = "remote('{$expression}', {$database}, {$table}";
 
@@ -134,7 +134,7 @@ class From
      *
      * @return From
      */
-    public function merge(string $database, string $regexp) : self
+    public function merge(string $database, string $regexp): self
     {
         return $this->table(new Expression("merge({$database}, '{$regexp}')"));
     }
@@ -172,7 +172,7 @@ class From
      *
      * @return BaseBuilder
      */
-    public function subQuery() : BaseBuilder
+    public function subQuery(): BaseBuilder
     {
         return $this->subQuery = $this->query->newQuery();
     }
@@ -192,7 +192,7 @@ class From
      *
      * @return Identifier
      */
-    public function getAlias() : ?Identifier
+    public function getAlias(): ?Identifier
     {
         return $this->alias;
     }
@@ -202,7 +202,7 @@ class From
      *
      * @return bool
      */
-    public function getFinal() : ?bool
+    public function getFinal(): ?bool
     {
         return $this->final;
     }
@@ -212,7 +212,7 @@ class From
      *
      * @return null|BaseBuilder
      */
-    public function getSubQuery() : ?BaseBuilder
+    public function getSubQuery(): ?BaseBuilder
     {
         return $this->subQuery;
     }

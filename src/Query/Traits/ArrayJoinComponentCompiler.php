@@ -15,7 +15,7 @@ trait ArrayJoinComponentCompiler
      *
      * @return string
      */
-    protected function compileArrayJoinComponent(Builder $query, ArrayJoinClause $join) : string
+    protected function compileArrayJoinComponent(Builder $query, ArrayJoinClause $join): string
     {
         $result = [];
         $result[] = 'ARRAY JOIN';

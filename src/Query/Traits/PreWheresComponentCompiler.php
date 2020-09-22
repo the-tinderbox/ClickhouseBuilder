@@ -15,7 +15,7 @@ trait PreWheresComponentCompiler
      *
      * @return string
      */
-    public function compilePrewheresComponent(Builder $builder, array $preWheres) : string
+    public function compilePrewheresComponent(Builder $builder, array $preWheres): string
     {
         $result = $this->compileTwoElementLogicExpressions($preWheres);
 

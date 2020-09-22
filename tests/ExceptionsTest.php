@@ -17,7 +17,7 @@ class ExceptionsTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
-    public function getBuilder() : Builder
+    public function getBuilder(): Builder
     {
         return new Builder(m::mock(Client::class));
     }

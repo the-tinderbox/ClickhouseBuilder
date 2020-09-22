@@ -14,7 +14,7 @@ trait UnionsComponentCompiler
      *
      * @return string
      */
-    public function compileUnionsComponent(Builder $builder, array $unions) : string
+    public function compileUnionsComponent(Builder $builder, array $unions): string
     {
         return 'UNION ALL '.
             implode(' UNION ALL ', array_map(function ($query) {

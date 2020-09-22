@@ -29,7 +29,7 @@ class Tuple
      *
      * @return array
      */
-    public function getElements() : array
+    public function getElements(): array
     {
         return $this->elements;
     }
@@ -41,7 +41,7 @@ class Tuple
      *
      * @return Tuple
      */
-    public function addElements(...$elements) : self
+    public function addElements(...$elements): self
     {
         $this->elements = array_merge($this->elements, array_flatten($elements));
 

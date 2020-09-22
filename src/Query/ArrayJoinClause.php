@@ -5,7 +5,7 @@ namespace Tinderbox\ClickhouseBuilder\Query;
 class ArrayJoinClause
 {
     /**
-     * Identifier of array to join
+     * Identifier of array to join.
      *
      * @var Expression|Identifier
      */
@@ -35,7 +35,7 @@ class ArrayJoinClause
      *
      * @return ArrayJoinClause
      */
-    public function array($arrayIdentifier) : self
+    public function array($arrayIdentifier): self
     {
         if (is_string($arrayIdentifier)) {
             $arrayIdentifier = new Identifier($arrayIdentifier);

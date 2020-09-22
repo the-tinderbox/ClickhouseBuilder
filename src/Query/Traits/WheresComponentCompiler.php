@@ -15,7 +15,7 @@ trait WheresComponentCompiler
      *
      * @return string
      */
-    public function compileWheresComponent(Builder $builder, array $wheres) : string
+    public function compileWheresComponent(Builder $builder, array $wheres): string
     {
         $result = $this->compileTwoElementLogicExpressions($wheres);
 

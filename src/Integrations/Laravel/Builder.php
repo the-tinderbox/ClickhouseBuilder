@@ -44,15 +44,15 @@ class Builder extends BaseBuilder
      */
     public function get()
     {
-        if (! empty($this->async)) {
+        if (!empty($this->async)) {
             return $this->connection->selectAsync($this->toAsyncQueries());
         } else {
             return $this->connection->select($this->toSql(), [], $this->getFiles());
         }
     }
-    
+
     /**
-     * Returns Query instance
+     * Returns Query instance.
      *
      * @param array $settings
      *
@@ -67,7 +67,7 @@ class Builder extends BaseBuilder
      * Performs compiled sql for count rows only. May be used for pagination
      * Works only without async queries.
      *
-     * @param string $column Column to pass into count() aggregate function
+     * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
      *
      * @return int|mixed
      */
@@ -76,7 +76,7 @@ class Builder extends BaseBuilder
         $builder = $this->getCountQuery();
         $result = $builder->get();
 
-        if (! empty($this->groups)) {
+        if (!empty($this->groups)) {
             return count($result);
         } else {
             return $result[0]['count'] ?? 0;
@@ -84,7 +84,9 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * Perform query and get first row
+     * Perform query and get first row.
+     *
+     * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
      *
      * @return mixed|null|\Tinderbox\Clickhouse\Query\Result
      */
@@ -100,7 +102,7 @@ class Builder extends BaseBuilder
      *
      * @return self
      */
-    public function newQuery() : Builder
+    public function newQuery(): Builder
     {
         return new static($this->connection);
     }
@@ -117,9 +119,9 @@ class Builder extends BaseBuilder
      */
     public function insertFiles(array $columns, array $files, string $format = Format::CSV, int $concurrency = 5): array
     {
-        return $this->connection->insertFiles((string)$this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
+        return $this->connection->insertFiles((string) $this->getFrom()->getTable(), $columns, $files, $format, $concurrency);
     }
-    
+
     /**
      * Insert in table data from files.
      *
@@ -132,9 +134,9 @@ class Builder extends BaseBuilder
     public function insertFile(array $columns, $file, string $format = Format::CSV): bool
     {
         $file = $this->prepareFile($file);
-        
+
         $result = $this->connection->insertFiles($this->getFrom()->getTable(), $columns, [$file], $format);
-        
+
         return $result[0][0];
     }
 
@@ -142,6 +144,8 @@ class Builder extends BaseBuilder
      * Performs insert query.
      *
      * @param array $values
+     *
+     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
      *
      * @return bool
      */
@@ -151,7 +155,7 @@ class Builder extends BaseBuilder
             return false;
         }
 
-        if (! is_array(reset($values))) {
+        if (!is_array(reset($values))) {
             $values = [$values];
         } /*
          * Here, we will sort the insert keys for every record so that each insert is
@@ -174,6 +178,8 @@ class Builder extends BaseBuilder
     /**
      * Performs ALTER TABLE `table` DELETE query.
      *
+     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
+     *
      * @return int
      */
     public function delete()
@@ -188,6 +194,7 @@ class Builder extends BaseBuilder
      * @param int $perPage
      *
      * @throws \Tinderbox\Clickhouse\Exceptions\ClientException
+     *
      * @return LengthAwarePaginator
      */
     public function paginate(int $page = 1, int $perPage = 15): LengthAwarePaginator
@@ -214,7 +221,7 @@ class Builder extends BaseBuilder
      *
      * @return QueryStatistic
      */
-    public function getLastQueryStatistics() : QueryStatistic
+    public function getLastQueryStatistics(): QueryStatistic
     {
         return $this->getConnection()->getLastQueryStatistic();
     }
@@ -224,7 +231,7 @@ class Builder extends BaseBuilder
      *
      * @return Connection
      */
-    public function getConnection() : Connection
+    public function getConnection(): Connection
     {
         return $this->connection;
     }
