@@ -30,7 +30,7 @@
   "require": {
     "php": "~7.1",
     "myclabs/php-enum": "^1.5",
-    "the-tinderbox/clickhouse-php-client": "~2.1.0"
+    "the-tinderbox/clickhouse-php-client": "^3.0"
   },
   "require-dev": {
     "illuminate/database": "5.*",
