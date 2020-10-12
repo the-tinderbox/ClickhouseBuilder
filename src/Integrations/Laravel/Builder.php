@@ -144,7 +144,7 @@ class Builder extends BaseBuilder
      * Performs insert query.
      *
      * @param array $values
-     * @param bool $skipSort
+     * @param bool  $skipSort
      *
      * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
      *
