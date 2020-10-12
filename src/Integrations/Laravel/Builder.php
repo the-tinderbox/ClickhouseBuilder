@@ -144,12 +144,13 @@ class Builder extends BaseBuilder
      * Performs insert query.
      *
      * @param array $values
+     * @param bool $skipSort
      *
      * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
      *
      * @return bool
      */
-    public function insert(array $values)
+    public function insert(array $values, bool $skipSort = false)
     {
         if (empty($values)) {
             return false;
@@ -162,17 +163,14 @@ class Builder extends BaseBuilder
          * in the same order for the record. We need to make sure this is the case
          * so there are not any errors or problems when inserting these records.
          */
-        else {
+        elseif (!$skipSort) {
             foreach ($values as $key => $value) {
                 ksort($value);
                 $values[$key] = $value;
             }
         }
 
-        return $this->connection->insert(
-            $this->grammar->compileInsert($this, $values),
-            array_flatten($values)
-        );
+        return $this->connection->insert($this->grammar->compileInsert($this, $values));
     }
 
     /**
