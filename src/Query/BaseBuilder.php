@@ -228,6 +228,16 @@ abstract class BaseBuilder
     }
 
     /**
+     * A factory method for Column.
+     *
+     * @return Column
+     */
+    protected function makeColumn(): Column
+    {
+        return new Column($this);
+    }
+
+    /**
      * Prepares columns given by user to Column objects.
      *
      * @param array $columns
@@ -242,7 +252,7 @@ abstract class BaseBuilder
         foreach ($columns as $column => $value) {
             if ($value instanceof Closure) {
                 $columnName = $column;
-                $column = (new Column($this));
+                $column = $this->makeColumn();
 
                 if (!is_int($columnName)) {
                     $column->name($columnName);
@@ -257,7 +267,7 @@ abstract class BaseBuilder
 
             if ($value instanceof BaseBuilder) {
                 $alias = is_string($column) ? $column : null;
-                $column = (new Column($this))->query($value);
+                $column = $this->makeColumn()->query($value);
 
                 if (!is_null($alias) && $withAliases) {
                     $column->as($alias);
@@ -272,7 +282,7 @@ abstract class BaseBuilder
             if (!$column instanceof Column) {
                 $alias = is_string($value) ? $value : null;
 
-                $column = (new Column($this))->name($column);
+                $column = $this->makeColumn()->name($column);
 
                 if (!is_null($alias) && $withAliases) {
                     $column->as($alias);
