@@ -195,6 +195,38 @@ class Column
     }
 
     /**
+     * Apply sum function to column.
+     *
+     * @param string|Expression|null $columnName
+     *
+     * @return $this
+     */
+    public function sum($columnName = null): self
+    {
+        if ($columnName !== null) {
+            $this->name($columnName);
+        }
+
+        $this->functions[] = ['function' => 'sum'];
+
+        return $this;
+    }
+
+    /**
+     * Apply round function to column.
+     *
+     * @param int $decimals
+     *
+     * @return $this
+     */
+    public function round(int $decimals = 0): self
+    {
+        $this->functions[] = ['function' => 'round', 'params' => $decimals];
+
+        return $this;
+    }
+
+    /**
      * Apply plus function to column.
      *
      * @param $value
