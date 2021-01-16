@@ -158,8 +158,8 @@ SELECT * FROM `table` GLOBAL ANY LEFT JOIN `another_table` AS `alias` USING `col
 For performing subquery as first argument you can pass closure or builder.
 
 ```php
-$builder->from('table')->join(function ($query) {
-    $query->select('column1', 'column2')->from('table2');
+$builder->from('table')->join(function ($join) {
+    $join->query()->select('column1', 'column2')->from('table2');
 }, 'any', 'left', ['column1', 'column2']);
 
 $builder->from('table')->join($builder->select('column1', 'column2')->from('table2'), 'any', 'left', ['column1', 'column2']);
