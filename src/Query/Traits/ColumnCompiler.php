@@ -101,6 +101,31 @@ trait ColumnCompiler
     }
 
     /**
+     * Compiles sum function on column.
+     *
+     * @param $column
+     *
+     * @return string
+     */
+    private function sum($column)
+    {
+        return "sum({$column})";
+    }
+
+    /**
+     * Compiles round function on column.
+     *
+     * @param $column
+     * @param $decimals
+     *
+     * @return string
+     */
+    private function round($column, $decimals)
+    {
+        return "round({$column}, {$decimals})";
+    }
+
+    /**
      * Compiles distinct function on column.
      *
      * @param $column

@@ -176,6 +176,27 @@ class GrammarTest extends TestCase
         $this->assertEquals('SELECT sumIf(`column`, > 10)', $select);
 
         $builder->select(function ($column) {
+            $column->name('column')->sum();
+        });
+
+        $select = $grammar->compileSelect($builder);
+        $this->assertEquals('SELECT sum(`column`)', $select);
+
+        $builder->select(function ($column) {
+            $column->sum('column');
+        });
+
+        $select = $grammar->compileSelect($builder);
+        $this->assertEquals('SELECT sum(`column`)', $select);
+
+        $builder->select(function ($column) {
+            $column->sum('column')->round(2);
+        });
+
+        $select = $grammar->compileSelect($builder);
+        $this->assertEquals('SELECT round(sum(`column`), 2)', $select);
+
+        $builder->select(function ($column) {
             $column->name('column')->distinct();
         });
 
