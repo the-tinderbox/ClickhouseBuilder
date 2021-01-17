@@ -397,6 +397,11 @@ class BuilderTest extends TestCase
 
         $builder = $this->getBuilder()->anyLeftJoin($this->getBuilder()->from('table'), ['column']);
         $this->assertEquals('SELECT * ANY LEFT JOIN (SELECT * FROM `table`) USING `column`', $builder->toSql());
+
+        $builder->from('table')->join(function ($join) {
+            $join->query()->select('column1', 'column2')->from('table2');
+        }, 'any', 'left', ['column1', 'column2']);
+        $this->assertEquals('SELECT * FROM `table` ANY LEFT JOIN (SELECT `column1`, `column2` FROM `table2`) USING `column1`, `column2`', $builder->toSql());
     }
 
     public function test_preWheres()
