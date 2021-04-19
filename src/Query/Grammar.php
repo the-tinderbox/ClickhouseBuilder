@@ -275,7 +275,7 @@ class Grammar
         } elseif (is_numeric($value)) {
             return $value;
         } elseif (is_null($value)) {
-            return "null";
+            return 'null';
         } else {
             return;
         }
