@@ -274,6 +274,8 @@ class Grammar
             return '`'.str_replace('`', '``', $value).'`';
         } elseif (is_numeric($value)) {
             return $value;
+        } elseif (is_null($value)) {
+            return 'null';
         } else {
             return;
         }
