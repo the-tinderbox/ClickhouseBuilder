@@ -29,9 +29,10 @@ class JoinClauseTest extends TestCase
         $join->table('table');
         $join->using(['column', 'another_column']);
         $join->addUsing('third_column');
+        $join->addUsing(new Identifier('other_column'));
 
         $this->assertEquals('table', $join->getTable());
-        $this->assertEquals(['column', 'another_column', 'third_column'], array_map(function ($using) {
+        $this->assertEquals(['column', 'another_column', 'third_column', 'other_column'], array_map(function ($using) {
             return (string) $using;
         }, $join->getUsing()));
 
