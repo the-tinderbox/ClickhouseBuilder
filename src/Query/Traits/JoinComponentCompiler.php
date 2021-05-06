@@ -14,9 +14,9 @@ trait JoinComponentCompiler
      * @param Builder      $query
      * @param JoinClause[] $joins
      *
-     * @return string
-     *
      * @throws GrammarException
+     *
+     * @return string
      */
     protected function compileJoinsComponent(Builder $query, array $joins): string
     {
