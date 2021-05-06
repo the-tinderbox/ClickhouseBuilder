@@ -11,39 +11,48 @@ trait JoinComponentCompiler
     /**
      * Compiles join to string to pass this string in query.
      *
-     * @param Builder    $query
-     * @param JoinClause $join
+     * @param Builder      $query
+     * @param JoinClause[] $joins
      *
      * @return string
+     *
+     * @throws GrammarException
      */
-    protected function compileJoinComponent(Builder $query, JoinClause $join): string
+    protected function compileJoinsComponent(Builder $query, array $joins): string
     {
-        $this->verifyJoin($join);
-
         $result = [];
 
-        if ($join->isDistributed()) {
-            $result[] = 'GLOBAL';
-        }
+        foreach ($joins as $join) {
+            $this->verifyJoin($join);
 
-        if (!is_null($join->getStrict())) {
-            $result[] = $join->getStrict();
-        }
+            if ($join->isDistributed()) {
+                $result[] = 'GLOBAL';
+            }
 
-        if (!is_null($join->getType())) {
-            $result[] = $join->getType();
-        }
+            if (!is_null($join->getStrict())) {
+                $result[] = $join->getStrict();
+            }
 
-        $result[] = 'JOIN';
-        $result[] = $this->wrap($join->getTable());
-        if ($join->getAlias()) {
-            $result[] = 'AS';
-            $result[] = $this->wrap($join->getAlias());
+            if (!is_null($join->getType())) {
+                $result[] = $join->getType();
+            }
+
+            $result[] = 'JOIN';
+            $result[] = $this->wrap($join->getTable());
+            if ($join->getAlias()) {
+                $result[] = 'AS';
+                $result[] = $this->wrap($join->getAlias());
+            }
+            if (!is_null($join->getUsing())) {
+                $result[] = 'USING';
+                $result[] = implode(', ', array_map(function ($column) {
+                    return $this->wrap($column);
+                }, $join->getUsing()));
+            } else {
+                $result[] = 'ON';
+                $result[] = $this->compileTwoElementLogicExpressions($join->getOnClauses());
+            }
         }
-        $result[] = 'USING';
-        $result[] = implode(', ', array_map(function ($column) {
-            return $this->wrap($column);
-        }, $join->getUsing()));
 
         return implode(' ', $result);
     }
@@ -55,11 +64,11 @@ trait JoinComponentCompiler
      *
      * @throws GrammarException
      */
-    private function verifyJoin(JoinClause $joinClause)
+    private function verifyJoin(JoinClause $joinClause): void
     {
         if (
             is_null($joinClause->getTable()) ||
-            is_null($joinClause->getUsing())
+            (is_null($joinClause->getUsing()) && is_null($joinClause->getOnClauses()))
         ) {
             throw GrammarException::wrongJoin($joinClause);
         }

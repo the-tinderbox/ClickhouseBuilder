@@ -22,8 +22,8 @@ class GrammarException extends Exception
             $whatMissing[] = 'table or subquery';
         }
 
-        if (is_null($joinClause->getUsing())) {
-            $whatMissing[] = 'using';
+        if (is_null($joinClause->getUsing()) && is_null($joinClause->getOnClauses())) {
+            $whatMissing[] = 'using or on clauses';
         }
 
         $whatMissing = implode(', ', $whatMissing);

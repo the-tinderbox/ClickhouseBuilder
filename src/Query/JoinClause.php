@@ -2,8 +2,10 @@
 
 namespace Tinderbox\ClickhouseBuilder\Query;
 
+use Closure;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinStrict;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinType;
+use Tinderbox\ClickhouseBuilder\Query\Enums\Operator;
 
 class JoinClause
 {
@@ -66,6 +68,13 @@ class JoinClause
     private $alias;
 
     /**
+     * On clauses for joining rows between tables.
+     *
+     * @var TwoElementsLogicExpression[]|null
+     */
+    private $onClauses;
+
+    /**
      * JoinClause constructor.
      *
      * @param BaseBuilder $query
@@ -116,15 +125,36 @@ class JoinClause
     }
 
     /**
-     * Alias for using method.
+     * Set "on" clause for join.
      *
-     * @param array ...$columns
+     * @param Closure|string $first
+     * @param mixed|null     $operator
+     * @param mixed|null     $second
+     * @param string         $boolean
      *
      * @return JoinClause
      */
-    public function on(...$columns): self
+    public function on($first, $operator = null, $second = null, string $concatOperator = Operator::AND): self
     {
-        return $this->using($columns);
+        $expression = new TwoElementsLogicExpression($this->query);
+
+        if (!is_null($first)) {
+            $expression->firstElement(is_string($first) ? new Identifier($first) : $first);
+        }
+
+        if (!is_null($second)) {
+            $expression->secondElement(is_string($second) ? new Identifier($second) : $second);
+        }
+
+        $expression->concatOperator($concatOperator);
+
+        if (is_string($operator)) {
+            $expression->operator($operator);
+        }
+
+        $this->onClauses[] = $expression;
+
+        return $this;
     }
 
     /**
@@ -285,6 +315,16 @@ class JoinClause
     public function getUsing(): ?array
     {
         return $this->using;
+    }
+
+    /**
+     * Get on clauses.
+     *
+     * @return array|null
+     */
+    public function getOnClauses(): ?array
+    {
+        return $this->onClauses;
     }
 
     /**

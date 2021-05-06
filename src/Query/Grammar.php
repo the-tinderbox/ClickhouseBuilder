@@ -45,7 +45,7 @@ class Grammar
         'from',
         'sample',
         'arrayJoin',
-        'join',
+        'joins',
         'prewheres',
         'wheres',
         'groups',
