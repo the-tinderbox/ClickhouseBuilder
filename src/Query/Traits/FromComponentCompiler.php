@@ -48,7 +48,7 @@ trait FromComponentCompiler
     private function verifyFrom(From $from)
     {
         if (is_null($from->getTable())) {
-            throw GrammarException::wrongFrom($from);
+            throw GrammarException::wrongFrom();
         }
     }
 }

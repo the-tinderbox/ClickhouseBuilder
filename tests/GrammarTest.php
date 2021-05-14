@@ -354,15 +354,30 @@ class GrammarTest extends TestCase
         $grammar->compileSelect($builder);
     }
 
+    public function testCompileSelectWithAmbiguousJoinKeys()
+    {
+        $grammar = new Grammar();
+
+        $builder = $this->getBuilder();
+
+        $builder->join(function (JoinClause $join) {
+            $join->table('table')->using(['aaa'])
+                ->on('aaa', '=', 'bbb');
+        });
+
+        $this->expectException(GrammarException::class);
+
+        $grammar->compileSelect($builder);
+    }
+
     public function testCompileSelectFromNullTable()
     {
         $grammar = new Grammar();
 
         $builder = $this->getBuilder();
         $builder->from(null);
-        $from = $builder->getFrom();
 
-        $e = GrammarException::wrongFrom($from);
+        $e = GrammarException::wrongFrom();
         $this->expectException(GrammarException::class);
         $this->expectExceptionMessage($e->getMessage());
 

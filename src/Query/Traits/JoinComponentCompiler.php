@@ -71,6 +71,8 @@ trait JoinComponentCompiler
             (is_null($joinClause->getUsing()) && is_null($joinClause->getOnClauses()))
         ) {
             throw GrammarException::wrongJoin($joinClause);
+        } elseif (!is_null($joinClause->getUsing()) && !is_null($joinClause->getOnClauses())) {
+            throw GrammarException::ambiguousJoinKeys();
         }
     }
 }

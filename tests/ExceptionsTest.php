@@ -33,14 +33,15 @@ class ExceptionsTest extends TestCase
         $e = GrammarException::missedTableForInsert();
         $this->assertInstanceOf(GrammarException::class, $e);
 
-        $from = new From($this->getBuilder());
-
-        $e = GrammarException::wrongFrom($from);
+        $e = GrammarException::wrongFrom();
         $this->assertInstanceOf(GrammarException::class, $e);
 
         $join = new JoinClause($this->getBuilder());
 
         $e = GrammarException::wrongJoin($join);
+        $this->assertInstanceOf(GrammarException::class, $e);
+
+        $e = GrammarException::ambiguousJoinKeys();
         $this->assertInstanceOf(GrammarException::class, $e);
     }
 

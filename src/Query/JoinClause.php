@@ -63,7 +63,7 @@ class JoinClause
     /**
      * Join alias.
      *
-     * @var \Tinderbox\ClickhouseBuilder\Query\Identifier
+     * @var Identifier
      */
     private $alias;
 
@@ -127,30 +127,20 @@ class JoinClause
     /**
      * Set "on" clause for join.
      *
-     * @param Closure|string $first
-     * @param mixed|null     $operator
-     * @param mixed|null     $second
-     * @param string         $boolean
+     * @param string $first
+     * @param string $operator
+     * @param string $second
+     * @param string $concatOperator
      *
      * @return JoinClause
      */
-    public function on($first, $operator = null, $second = null, string $concatOperator = Operator::AND): self
+    public function on(string $first, string $operator, string $second, string $concatOperator = Operator::AND): self
     {
-        $expression = new TwoElementsLogicExpression($this->query);
-
-        if (!is_null($first)) {
-            $expression->firstElement(is_string($first) ? new Identifier($first) : $first);
-        }
-
-        if (!is_null($second)) {
-            $expression->secondElement(is_string($second) ? new Identifier($second) : $second);
-        }
-
-        $expression->concatOperator($concatOperator);
-
-        if (is_string($operator)) {
-            $expression->operator($operator);
-        }
+        $expression = (new TwoElementsLogicExpression($this->query))
+            ->firstElement(new Identifier($first))
+            ->operator($operator)
+            ->secondElement(new Identifier($second))
+            ->concatOperator($concatOperator);
 
         $this->onClauses[] = $expression;
 
@@ -204,7 +194,7 @@ class JoinClause
      *
      * @return JoinClause
      */
-    public function all()
+    public function all(): self
     {
         return $this->strict(JoinStrict::ALL);
     }
@@ -214,7 +204,7 @@ class JoinClause
      *
      * @return JoinClause
      */
-    public function any()
+    public function any(): self
     {
         return $this->strict(JoinStrict::ANY);
     }
@@ -224,7 +214,7 @@ class JoinClause
      *
      * @return JoinClause
      */
-    public function inner()
+    public function inner(): self
     {
         return $this->type(JoinType::INNER);
     }
@@ -234,7 +224,7 @@ class JoinClause
      *
      * @return JoinClause
      */
-    public function left()
+    public function left(): self
     {
         return $this->type(JoinType::LEFT);
     }
@@ -256,7 +246,7 @@ class JoinClause
     /**
      * Set sub-query as table to select from.
      *
-     * @param \Closure|BaseBuilder|null $query
+     * @param Closure|BaseBuilder|null $query
      *
      * @return JoinClause|BaseBuilder
      */
@@ -266,7 +256,7 @@ class JoinClause
             return $this->subQuery();
         }
 
-        if ($query instanceof \Closure) {
+        if ($query instanceof Closure) {
             $query = tap($this->query->newQuery(), $query);
         }
 
@@ -300,7 +290,7 @@ class JoinClause
      *
      * @return $this
      */
-    public function as(string $alias)
+    public function as(string $alias): self
     {
         $this->alias = new Identifier($alias);
 
@@ -370,7 +360,7 @@ class JoinClause
     /**
      * Get table to select from.
      *
-     * @return Expression|null|Identifier
+     * @return Expression|null|string
      */
     public function getTable()
     {
