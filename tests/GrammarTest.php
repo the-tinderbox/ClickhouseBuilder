@@ -300,6 +300,12 @@ class GrammarTest extends TestCase
         }, ['column']));
         $this->assertEquals('SELECT * ANY LEFT JOIN (SELECT * FROM `table`) AS `test` USING `column`', $select);
 
+        $select = $grammar->compileSelect($this->getBuilder()->from($this->getBuilder()->table('test_1')->select('column', 'column_1'), 'test_1_alias')
+            ->anyLeftJoin(function (JoinClause $join) {
+                $join->table($this->getBuilder()->table('test_2')->select('column', 'column_2'))->as('test_2_alias')->on('test_1_alias.column', '=', 'test_2_alias.column');
+            }));
+        $this->assertEquals('SELECT * FROM (SELECT `column`, `column_1` FROM `test_1`) AS `test_1_alias` ANY LEFT JOIN (SELECT `column`, `column_2` FROM `test_2`) AS `test_2_alias` ON `test_1_alias`.`column` = `test_2_alias`.`column`', $select);
+
         /*
          * With complex two elements logic expressions
          */
@@ -348,15 +354,30 @@ class GrammarTest extends TestCase
         $grammar->compileSelect($builder);
     }
 
+    public function testCompileSelectWithAmbiguousJoinKeys()
+    {
+        $grammar = new Grammar();
+
+        $builder = $this->getBuilder();
+
+        $builder->join(function (JoinClause $join) {
+            $join->table('table')->using(['aaa'])
+                ->on('aaa', '=', 'bbb');
+        });
+
+        $this->expectException(GrammarException::class);
+
+        $grammar->compileSelect($builder);
+    }
+
     public function testCompileSelectFromNullTable()
     {
         $grammar = new Grammar();
 
         $builder = $this->getBuilder();
         $builder->from(null);
-        $from = $builder->getFrom();
 
-        $e = GrammarException::wrongFrom($from);
+        $e = GrammarException::wrongFrom();
         $this->expectException(GrammarException::class);
         $this->expectExceptionMessage($e->getMessage());
 

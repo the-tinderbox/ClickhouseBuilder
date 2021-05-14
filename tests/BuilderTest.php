@@ -314,52 +314,66 @@ class BuilderTest extends TestCase
     public function test_join_simple()
     {
         $builder = $this->getBuilder();
-
         $builder->from('table')->join('table2', 'any', 'left', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY LEFT JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->join('table2', 'any', 'inner', ['column', 'column2']);
         $this->assertEquals('SELECT * FROM `table` ANY INNER JOIN `table2` USING `column`, `column2`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->join('table2', 'all', 'left', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL LEFT JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->join('table2', 'any', 'left', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY LEFT JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->join('table2', 'any', 'left', ['column'], 'global');
         $this->assertEquals('SELECT * FROM `table` GLOBAL ANY LEFT JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->join('table2', 'any', 'left', ['column'], 'global', 'table3');
         $this->assertEquals('SELECT * FROM `table` GLOBAL ANY LEFT JOIN `table2` AS `table3` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->join('table2 as table3', 'any', 'left', ['column'], 'global', 'table4');
         $this->assertEquals('SELECT * FROM `table` GLOBAL ANY LEFT JOIN `table2` AS `table3` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->join('table2 as table3 as table', 'any', 'left', ['column'], 'global', 'table4');
         $this->assertEquals('SELECT * FROM `table` GLOBAL ANY LEFT JOIN `table2` AS `table3` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->leftJoin('table2', 'all', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL LEFT JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->leftJoin('table2', 'any', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY LEFT JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->innerJoin('table2', 'all', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL INNER JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->innerJoin('table2', 'any', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY INNER JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->anyLeftJoin('table2', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY LEFT JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->anyInnerJoin('table2', ['column']);
         $this->assertEquals('SELECT * FROM `table` ANY INNER JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->allLeftJoin('table2', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL LEFT JOIN `table2` USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->allInnerJoin('table2', ['column']);
         $this->assertEquals('SELECT * FROM `table` ALL INNER JOIN `table2` USING `column`', $builder->toSql());
     }
@@ -367,27 +381,30 @@ class BuilderTest extends TestCase
     public function test_join_with_closure()
     {
         $builder = $this->getBuilder();
-
         $builder->from('table')->anyLeftJoin(function ($join) {
             $this->assertInstanceOf(JoinClause::class, $join);
         });
 
+        $builder = $this->getBuilder();
         $builder->from('table')->allLeftJoin(function ($join) {
             $join->table('table2')->using(['column'])->addUsing('column2');
         });
         $this->assertEquals('SELECT * FROM `table` ALL LEFT JOIN `table2` USING `column`, `column2`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->anyInnerJoin(function ($join) {
             $join->table('table2')->using('column');
         }, ['column2']);
         $this->assertEquals('SELECT * FROM `table` ANY INNER JOIN `table2` USING `column`, `column2`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->allInnerJoin(function ($join) {
             $join->query()->select('column')->from('table');
             $join->addUsing('column', 'column2');
         });
         $this->assertEquals('SELECT * FROM `table` ALL INNER JOIN (SELECT `column` FROM `table`) USING `column`, `column2`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->allInnerJoin(function ($join) {
             $join->query()->select('column')->from(function ($from) {
                 $from->query()->from('table2');
@@ -398,6 +415,7 @@ class BuilderTest extends TestCase
         $builder = $this->getBuilder()->anyLeftJoin($this->getBuilder()->from('table'), ['column']);
         $this->assertEquals('SELECT * ANY LEFT JOIN (SELECT * FROM `table`) USING `column`', $builder->toSql());
 
+        $builder = $this->getBuilder();
         $builder->from('table')->join(function ($join) {
             $join->query()->select('column1', 'column2')->from('table2');
         }, 'any', 'left', ['column1', 'column2']);
@@ -1144,5 +1162,26 @@ class BuilderTest extends TestCase
         $this->assertContains('SELECT * FROM `system`.`tables` WHERE `database` = \'default\' AND `name` = \'builder_test1\'', $queries);
         $this->assertContains('SELECT * FROM `system`.`tables` WHERE `database` = \'default\' AND `name` = \'builder_test2\'', $queries);
         $this->assertContains('SELECT * FROM `system`.`tables` WHERE `database` = \'default\' AND `name` = \'builder_test3\'', $queries);
+    }
+
+    public function testJoinWithOnClause()
+    {
+        $builder = $this->getBuilder();
+        $builder->from('table1')->anyLeftJoin(function (JoinClause $join) {
+            $join->table('table2')->on('column_from_table_1', '=', 'column_from_table_2');
+        });
+        $this->assertEquals('SELECT * FROM `table1` ANY LEFT JOIN `table2` ON `column_from_table_1` = `column_from_table_2`', $builder->toSql());
+    }
+
+    public function testMultipleJoins()
+    {
+        $builder = $this->getBuilder();
+        $builder->from('table1')->anyLeftJoin(function (JoinClause $join) {
+            $join->table('table2')->on('column_from_table_2', '=', 'column_from_table_1');
+        });
+        $builder->from('table1')->allLeftJoin(function (JoinClause $join) {
+            $join->table('table3')->on('column_from_table_3', '=', 'column_from_table_1');
+        });
+        $this->assertEquals('SELECT * FROM `table1` ANY LEFT JOIN `table2` ON `column_from_table_2` = `column_from_table_1` ALL LEFT JOIN `table3` ON `column_from_table_3` = `column_from_table_1`', $builder->toSql());
     }
 }

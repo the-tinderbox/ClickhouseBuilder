@@ -2,8 +2,10 @@
 
 namespace Tinderbox\ClickhouseBuilder\Query;
 
+use Closure;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinStrict;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinType;
+use Tinderbox\ClickhouseBuilder\Query\Enums\Operator;
 
 class JoinClause
 {
@@ -61,9 +63,16 @@ class JoinClause
     /**
      * Join alias.
      *
-     * @var \Tinderbox\ClickhouseBuilder\Query\Identifier
+     * @var Identifier
      */
     private $alias;
+
+    /**
+     * On clauses for joining rows between tables.
+     *
+     * @var TwoElementsLogicExpression[]|null
+     */
+    private $onClauses;
 
     /**
      * JoinClause constructor.
@@ -116,15 +125,26 @@ class JoinClause
     }
 
     /**
-     * Alias for using method.
+     * Set "on" clause for join.
      *
-     * @param array ...$columns
+     * @param string $first
+     * @param string $operator
+     * @param string $second
+     * @param string $concatOperator
      *
      * @return JoinClause
      */
-    public function on(...$columns): self
+    public function on(string $first, string $operator, string $second, string $concatOperator = Operator::AND): self
     {
-        return $this->using($columns);
+        $expression = (new TwoElementsLogicExpression($this->query))
+            ->firstElement(new Identifier($first))
+            ->operator($operator)
+            ->secondElement(new Identifier($second))
+            ->concatOperator($concatOperator);
+
+        $this->onClauses[] = $expression;
+
+        return $this;
     }
 
     /**
@@ -174,7 +194,7 @@ class JoinClause
      *
      * @return JoinClause
      */
-    public function all()
+    public function all(): self
     {
         return $this->strict(JoinStrict::ALL);
     }
@@ -184,7 +204,7 @@ class JoinClause
      *
      * @return JoinClause
      */
-    public function any()
+    public function any(): self
     {
         return $this->strict(JoinStrict::ANY);
     }
@@ -194,7 +214,7 @@ class JoinClause
      *
      * @return JoinClause
      */
-    public function inner()
+    public function inner(): self
     {
         return $this->type(JoinType::INNER);
     }
@@ -204,7 +224,7 @@ class JoinClause
      *
      * @return JoinClause
      */
-    public function left()
+    public function left(): self
     {
         return $this->type(JoinType::LEFT);
     }
@@ -226,7 +246,7 @@ class JoinClause
     /**
      * Set sub-query as table to select from.
      *
-     * @param \Closure|BaseBuilder|null $query
+     * @param Closure|BaseBuilder|null $query
      *
      * @return JoinClause|BaseBuilder
      */
@@ -236,7 +256,7 @@ class JoinClause
             return $this->subQuery();
         }
 
-        if ($query instanceof \Closure) {
+        if ($query instanceof Closure) {
             $query = tap($this->query->newQuery(), $query);
         }
 
@@ -270,7 +290,7 @@ class JoinClause
      *
      * @return $this
      */
-    public function as(string $alias)
+    public function as(string $alias): self
     {
         $this->alias = new Identifier($alias);
 
@@ -285,6 +305,16 @@ class JoinClause
     public function getUsing(): ?array
     {
         return $this->using;
+    }
+
+    /**
+     * Get on clauses.
+     *
+     * @return array|null
+     */
+    public function getOnClauses(): ?array
+    {
+        return $this->onClauses;
     }
 
     /**
@@ -330,7 +360,7 @@ class JoinClause
     /**
      * Get table to select from.
      *
-     * @return Expression|null|Identifier
+     * @return Expression|null|string
      */
     public function getTable()
     {

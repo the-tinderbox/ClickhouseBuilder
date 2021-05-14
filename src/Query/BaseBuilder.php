@@ -37,11 +37,11 @@ abstract class BaseBuilder
     protected $sample;
 
     /**
-     * Join clause.
+     * Join clauses.
      *
-     * @var JoinClause
+     * @var JoinClause[]|null
      */
-    protected $join;
+    protected $joins;
 
     /**
      * Array join clause.
@@ -490,13 +490,13 @@ abstract class BaseBuilder
         bool $global = false,
         ?string $alias = null
     ) {
-        $this->join = new JoinClause($this);
+        $join = new JoinClause($this);
 
         /*
          * If builder instance given, then we assume that sub-query should be used as table in join
          */
         if ($table instanceof BaseBuilder) {
-            $this->join->query($table);
+            $join->query($table);
 
             $this->files = array_merge($this->files, $table->getFiles());
         }
@@ -506,7 +506,7 @@ abstract class BaseBuilder
          * set up JoinClause object in callback
          */
         if ($table instanceof Closure) {
-            $table($this->join);
+            $table($join);
         }
 
         /*
@@ -514,33 +514,35 @@ abstract class BaseBuilder
          * then we assume that table name was given.
          */
         if (!$table instanceof Closure && !$table instanceof BaseBuilder) {
-            $this->join->table($table);
+            $join->table($table);
         }
 
         /*
          * If using was given, then merge it with using given before, in closure
          */
         if (!is_null($using)) {
-            $this->join->addUsing($using);
+            $join->addUsing($using);
         }
 
-        if (!is_null($strict) && is_null($this->join->getStrict())) {
-            $this->join->strict($strict);
+        if (!is_null($strict) && is_null($join->getStrict())) {
+            $join->strict($strict);
         }
 
-        if (!is_null($type) && is_null($this->join->getType())) {
-            $this->join->type($type);
+        if (!is_null($type) && is_null($join->getType())) {
+            $join->type($type);
         }
 
-        if (!is_null($alias) && is_null($this->join->getAlias())) {
-            $this->join->as($alias);
+        if (!is_null($alias) && is_null($join->getAlias())) {
+            $join->as($alias);
         }
 
-        $this->join->distributed($global);
+        $join->distributed($global);
 
-        if (!is_null($this->join->getSubQuery())) {
-            $this->join->query($this->join->getSubQuery());
+        if (!is_null($join->getSubQuery())) {
+            $join->query($join->getSubQuery());
         }
+
+        $this->joins[] = $join;
 
         return $this;
     }
@@ -1933,11 +1935,11 @@ abstract class BaseBuilder
     /**
      * Get JoinClause.
      *
-     * @return JoinClause
+     * @return JoinClause[]|null
      */
-    public function getJoin(): ?JoinClause
+    public function getJoins(): ?array
     {
-        return $this->join;
+        return $this->joins;
     }
 
     /**

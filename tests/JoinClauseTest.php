@@ -9,8 +9,10 @@ use Tinderbox\Clickhouse\Client;
 use Tinderbox\ClickhouseBuilder\Query\Builder;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinStrict;
 use Tinderbox\ClickhouseBuilder\Query\Enums\JoinType;
+use Tinderbox\ClickhouseBuilder\Query\Enums\Operator;
 use Tinderbox\ClickhouseBuilder\Query\Identifier;
 use Tinderbox\ClickhouseBuilder\Query\JoinClause;
+use Tinderbox\ClickhouseBuilder\Query\TwoElementsLogicExpression;
 
 class JoinClauseTest extends TestCase
 {
@@ -27,17 +29,20 @@ class JoinClauseTest extends TestCase
         $join->table('table');
         $join->using(['column', 'another_column']);
         $join->addUsing('third_column');
+        $join->addUsing(new Identifier('other_column'));
 
         $this->assertEquals('table', $join->getTable());
-        $this->assertEquals(['column', 'another_column', 'third_column'], array_map(function ($using) {
+        $this->assertEquals(['column', 'another_column', 'third_column', 'other_column'], array_map(function ($using) {
             return (string) $using;
         }, $join->getUsing()));
 
         $join = new JoinClause($this->getBuilder());
-        $join->on([new Identifier('column'), 'another_column']);
-        $this->assertEquals(['column', 'another_column'], array_map(function ($using) {
-            return (string) $using;
-        }, $join->getUsing()));
+        $join->on('first_column', '=', 'second_column');
+        $join->on('first_column', '=', 'third_column');
+        $this->assertEquals([
+            (new TwoElementsLogicExpression($this->getBuilder()))->firstElement(new Identifier('first_column'))->operator('=')->secondElement(new Identifier('second_column'))->concatOperator(Operator::AND),
+            (new TwoElementsLogicExpression($this->getBuilder()))->firstElement(new Identifier('first_column'))->operator('=')->secondElement(new Identifier('third_column'))->concatOperator(Operator::AND),
+        ], $join->getOnClauses());
 
         $join->strict(JoinStrict::ALL);
 
