@@ -10,7 +10,6 @@ use Tinderbox\ClickhouseBuilder\Exceptions\BuilderException;
 use Tinderbox\ClickhouseBuilder\Exceptions\GrammarException;
 use Tinderbox\ClickhouseBuilder\Exceptions\NotSupportedException;
 use Tinderbox\ClickhouseBuilder\Query\Builder;
-use Tinderbox\ClickhouseBuilder\Query\From;
 use Tinderbox\ClickhouseBuilder\Query\JoinClause;
 
 class ExceptionsTest extends TestCase

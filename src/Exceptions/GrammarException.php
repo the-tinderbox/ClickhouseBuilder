@@ -33,7 +33,7 @@ class GrammarException extends Exception
 
     public static function ambiguousJoinKeys(): self
     {
-        return new static("You cannot use using and on clauses as join keys for the same join.");
+        return new static('You cannot use using and on clauses as join keys for the same join.');
     }
 
     public static function wrongFrom(): self
