@@ -1059,12 +1059,16 @@ class BuilderTest extends TestCase
 
         $builder->newQuery()->table('test')->insertFile(['number'], new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2'));
 
+        $result = $builder->newQuery()->table('test')->count();
+
+        $this->assertEquals(3, $result);
+
+        $builder->newQuery()->table('test')->where('number', '=', 1)->delete();
+
         /*
          * We have to sleep for 3 seconds while mutation in progress
          */
         sleep(3);
-
-        $builder->newQuery()->table('test')->where('number', '=', 1)->delete();
 
         $result = $builder->newQuery()->table('test')->count();
 

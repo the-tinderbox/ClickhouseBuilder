@@ -548,12 +548,16 @@ class LaravelIntegrationTest extends TestCase
             new FileFromString('0'.PHP_EOL.'1'.PHP_EOL.'2'),
         ]);
 
+        $result = $connection->table('test')->select($connection->raw('count() as count'))->get();
+
+        $this->assertEquals(3, $result[0]['count']);
+
+        $connection->table('test')->where('number', '=', 1)->delete();
+
         /*
          * We have to sleep for 3 seconds while mutation in progress
          */
         sleep(3);
-
-        $connection->table('test')->where('number', '=', 1)->delete();
 
         $result = $connection->table('test')->select($connection->raw('count() as count'))->get();
 
