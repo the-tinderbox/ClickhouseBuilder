@@ -563,6 +563,9 @@ class BuilderTest extends TestCase
         });
         $this->assertEquals('SELECT `column` FROM `table` WHERE (`column1` = 2 AND `column2` > 3)', $builder->toSql());
 
+        $builder = $this->getBuilder()->select('column')->from('table')->where([['column1', 2], ['column2', '>', 3]]);
+        $this->assertEquals('SELECT `column` FROM `table` WHERE (`column1` = 2 AND `column2` > 3)', $builder->toSql());
+
         $builder = $this->getBuilder()->select('column')->from('table')->whereRaw('column = 2');
         $this->assertEquals('SELECT `column` FROM `table` WHERE column = 2', $builder->toSql());
 
@@ -576,6 +579,14 @@ class BuilderTest extends TestCase
 
         $builder = $this->getBuilder()->from('table')->where('column', 1)->orWhere('column2', 3);
         $this->assertEquals('SELECT * FROM `table` WHERE `column` = 1 OR `column2` = 3', $builder->toSql());
+
+        $builder = $this->getBuilder()->from('table')->where('column', 1)->orWhere([['column2', '>', 3], ['column3', '<', 4]]);
+        $this->assertEquals('SELECT * FROM `table` WHERE `column` = 1 OR (`column2` > 3 AND `column3` < 4)', $builder->toSql());
+
+        $builder = $this->getBuilder()->from('table')->where('column', 1)->orWhere(function ($query) {
+            $query->where([['column2', '>', 3], ['column3', '<', 4]]);
+        });
+        $this->assertEquals('SELECT * FROM `table` WHERE `column` = 1 OR ((`column2` > 3 AND `column3` < 4))', $builder->toSql());
 
         $builder = $this->getBuilder();
         $element = new TwoElementsLogicExpression($builder);

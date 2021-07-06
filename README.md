@@ -293,6 +293,18 @@ $builder->from('table')->where('column', 'IN', function ($query) {
 SELECT * FROM `table` WHERE `column` IN (SELECT `column` FROM `table`)
 ```
 
+`where` accepts array parameter, which works similarly to closure.
+```php
+$builder->from('table')->where([
+    ['column1', 'value1'], 
+    ['column2', 'value2'],
+]);
+```
+
+```sql
+SELECT * FROM `table` WHERE (`column1` = 'value1' AND `column2` = 'value2')
+```
+
 Also you can pass internal representation of this statement and it will be used. I will no talk about this with deeper
 explanation because its not preferable way to use this.
 
