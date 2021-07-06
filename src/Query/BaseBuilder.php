@@ -1061,6 +1061,7 @@ abstract class BaseBuilder
                     }
                 });
             }
+
             return $this;
         }
 
