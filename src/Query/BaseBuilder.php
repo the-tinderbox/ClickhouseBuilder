@@ -1047,15 +1047,15 @@ abstract class BaseBuilder
     public function where($column, $operator = null, $value = null, string $concatOperator = Operator:: AND)
     {
         if (is_array($column)) {
-            // only support `and` and `or` concat 
+            // only support `and` and `or` concat
             if ($concatOperator == Operator:: AND) {
-                $this->where(function ($query) use ($column){
+                $this->where(function ($query) use ($column) {
                     foreach ($column as $item) { // unpacking argument
                         $query->where(...$item);
                     }
                 });
-            } else if ($concatOperator == Operator:: OR) {
-                $this->orWhere(function ($query) use ($column){
+            } elseif ($concatOperator == Operator:: OR) {
+                $this->orWhere(function ($query) use ($column) {
                     foreach ($column as $item) { // unpacking argument
                         $query->where(...$item);
                     }
