@@ -1171,6 +1171,12 @@ class BuilderTest extends TestCase
             $join->table('table2')->on('column_from_table_1', '=', 'column_from_table_2');
         });
         $this->assertEquals('SELECT * FROM `table1` ANY LEFT JOIN `table2` ON `column_from_table_1` = `column_from_table_2`', $builder->toSql());
+
+        $builder = $this->getBuilder();
+        $builder->from('table1')->anyLeftJoin(function (JoinClause $join) {
+            $join->table('table2')->on('column_from_table_1', '=', raw('toUInt32(`column_from_table_2`)'));
+        });
+        $this->assertEquals('SELECT * FROM `table1` ANY LEFT JOIN `table2` ON `column_from_table_1` = toUInt32(`column_from_table_2`)', $builder->toSql());
     }
 
     public function testMultipleJoins()
