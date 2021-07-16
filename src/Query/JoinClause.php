@@ -127,19 +127,19 @@ class JoinClause
     /**
      * Set "on" clause for join.
      *
-     * @param string $first
-     * @param string $operator
-     * @param string $second
-     * @param string $concatOperator
+     * @param string|Expression $first
+     * @param string            $operator
+     * @param string|Expression $second
+     * @param string            $concatOperator
      *
      * @return JoinClause
      */
-    public function on(string $first, string $operator, string $second, string $concatOperator = Operator::AND): self
+    public function on($first, string $operator, $second, string $concatOperator = Operator::AND): self
     {
         $expression = (new TwoElementsLogicExpression($this->query))
-            ->firstElement(new Identifier($first))
+            ->firstElement(is_string($first) ? new Identifier($first) : $first)
             ->operator($operator)
-            ->secondElement(new Identifier($second))
+            ->secondElement(is_string($second) ? new Identifier($second) : $second)
             ->concatOperator($concatOperator);
 
         $this->onClauses[] = $expression;
