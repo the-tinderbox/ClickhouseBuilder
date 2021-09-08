@@ -471,6 +471,21 @@ abstract class BaseBuilder
     }
 
     /**
+     * Add left array join to query.
+     *
+     * @param string|Expression $arrayIdentifier
+     *
+     * @return static
+     */
+    public function leftArrayJoin($arrayIdentifier)
+    {
+        $this->arrayJoin = new ArrayJoinClause($this);
+        $this->arrayJoin->left()->array($arrayIdentifier);
+
+        return $this;
+    }
+
+    /**
      * Add join to query.
      *
      * @param string|self|Closure $table  Table to select from, also may be a sub-query

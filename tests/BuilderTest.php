@@ -1116,6 +1116,14 @@ class BuilderTest extends TestCase
         $this->assertEquals('SELECT * FROM `test` ARRAY JOIN `someArr`', $builder->toSql());
     }
 
+    public function testLeftArrayJoin()
+    {
+        $builder = $this->getBuilder();
+        $builder->table('test')->leftArrayJoin('someArr');
+
+        $this->assertEquals('SELECT * FROM `test` LEFT ARRAY JOIN `someArr`', $builder->toSql());
+    }
+
     public function testAddFile()
     {
         $builder = $this->getBuilder();

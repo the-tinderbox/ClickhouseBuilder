@@ -18,6 +18,11 @@ trait ArrayJoinComponentCompiler
     protected function compileArrayJoinComponent(Builder $query, ArrayJoinClause $join): string
     {
         $result = [];
+
+        if (!is_null($join->getType())) {
+            $result[] = $join->getType();
+        }
+
         $result[] = 'ARRAY JOIN';
         $result[] = $this->wrap($join->getArrayIdentifier());
 
