@@ -181,6 +181,18 @@ $buulder->from('table')->leftJoin('table', 'any', ['column']);
 $buulder->from('table')->innerJoin('table', 'all', ['column']);
 ```
 
+You can use array join as well.
+
+```php
+$builder->from('test')->arrayJoin('someArr');
+$builder->from('test')->leftArrayJoin('someArr');
+```
+
+```sql
+SELECT * FROM `test` ARRAY JOIN `someArr`
+SELECT * FROM `test` LEFT ARRAY JOIN `someArr`
+```
+
 ### Temporary tables usage
 
 There are some cases when you need to filter f.e. users by their ids, but amount of ids is huge. You can
