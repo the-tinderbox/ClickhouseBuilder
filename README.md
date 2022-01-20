@@ -503,6 +503,13 @@ Example with alone server:
     ]
 ]
 ```
+
+Get a new builder:
+
+```php
+DB::connection('clickhouse')->query();
+```
+
 or
 ```php
 'connections' => [
