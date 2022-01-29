@@ -427,11 +427,6 @@ Will produce:
 SELECT * FROM `table` LIMIT 100, 10
 ```
 
-```php
-$builder->from('table')->limit(10, 100);
-```
-`` SELECT * FROM `table` LIMIT 100, 10 ``
-
 ### Union ALL
 In `unionAll` method can be passed closure or builder instance. In case of closure inside will be passed
 builder instance.
@@ -508,6 +503,13 @@ Example with alone server:
     ]
 ]
 ```
+
+Get a new builder:
+
+```php
+DB::connection('clickhouse')->query();
+```
+
 or
 ```php
 'connections' => [
