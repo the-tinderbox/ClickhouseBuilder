@@ -197,7 +197,7 @@ class Builder extends BaseBuilder
      */
     public function paginate(int $page = 1, int $perPage = 15): LengthAwarePaginator
     {
-        $count = $this->getConnection()
+        $count = (int) $this->getConnection()
             ->table($this->cloneWithout(['columns' => []])
             ->select(new Expression('1')))
             ->count();
