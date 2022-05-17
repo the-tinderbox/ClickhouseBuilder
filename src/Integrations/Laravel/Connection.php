@@ -17,6 +17,8 @@ use Tinderbox\ClickhouseBuilder\Query\Expression;
 
 class Connection extends \Illuminate\Database\Connection
 {
+    /**@var array **/
+    protected $setting = [];
     /**
      * Clickhouse connection handler.
      *
@@ -428,11 +430,20 @@ class Connection extends \Illuminate\Database\Connection
     {
         $startTime = microtime(true);
 
-        $result = $this->getClient()->writeOne($query);
+        $result = $this->getClient()->writeOne($query , [] , this->setting);
 
         $this->logQuery($query, $bindings, microtime(true) - $startTime);
 
         return $result;
+    }
+    /**
+    *Set Clickhouse setting
+    * @param array       $setting
+    * @return Connection
+    */
+    public function setSetting(array $setting){
+        $this->setting = $setting;
+        return $this;
     }
 
     /**
