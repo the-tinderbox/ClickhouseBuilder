@@ -142,35 +142,58 @@ class Grammar
      *
      * @param        $tableName
      * @param string $engine
-     * @param array  $structure
-     * @param bool   $ifNotExists
+     * @param array $structure
+     * @param string|null $clusterName
+     * @param bool $ifNotExists
      *
      * @return string
      */
-    public function compileCreateTable($tableName, string $engine, array $structure, $ifNotExists = false): string
+    public function compileCreateTable($tableName, string $engine, array $structure, string $clusterName = null, $ifNotExists = false): string
     {
         if ($tableName instanceof Identifier) {
             $tableName = (string) $tableName;
         }
 
-        return 'CREATE TABLE '.($ifNotExists ? 'IF NOT EXISTS ' : '')."{$tableName} ({$this->compileTableStructure($structure)}) ENGINE = {$engine}";
+        $sql = "CREATE TABLE ";
+        if ($ifNotExists) {
+            $sql .= "IF NOT EXISTS ";
+        }
+
+        $sql .= $tableName;
+        if (!is_null($clusterName)) {
+            $sql .= " ON CLUSTER {$clusterName}";
+        }
+        $sql .= " ({$this->compileTableStructure($structure)}) ENGINE = {$engine}";
+
+        return $sql;
     }
 
     /**
      * Compiles drop table query.
      *
      * @param      $tableName
+     * @param string|null $clusterName
      * @param bool $ifExists
      *
      * @return string
      */
-    public function compileDropTable($tableName, $ifExists = false): string
+    public function compileDropTable($tableName, string $clusterName = null, $ifExists = false): string
     {
         if ($tableName instanceof Identifier) {
             $tableName = (string) $tableName;
         }
 
-        return 'DROP TABLE '.($ifExists ? 'IF EXISTS ' : '')."{$tableName}";
+        $sql = "DROP TABLE ";
+        if ($ifExists) {
+            $sql .= "IF EXISTS ";
+        }
+
+        $sql .= $tableName;
+        if (!is_null($clusterName)) {
+            $sql .= " ON CLUSTER {$clusterName}";
+        }
+
+        return $sql;
     }
 
     /**

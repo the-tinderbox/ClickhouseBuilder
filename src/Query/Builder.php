@@ -178,7 +178,7 @@ class Builder extends BaseBuilder
      */
     public function createTable($tableName, string $engine, array $structure)
     {
-        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure));
+        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, $this->getOnCluster()));
     }
 
     /**
@@ -192,16 +192,16 @@ class Builder extends BaseBuilder
      */
     public function createTableIfNotExists($tableName, string $engine, array $structure)
     {
-        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, true));
+        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, $this->getOnCluster(), true));
     }
 
     public function dropTable($tableName)
     {
-        return $this->client->writeOne($this->grammar->compileDropTable($tableName));
+        return $this->client->writeOne($this->grammar->compileDropTable($tableName, $this->getOnCluster()));
     }
 
     public function dropTableIfExists($tableName)
     {
-        return $this->client->writeOne($this->grammar->compileDropTable($tableName, true));
+        return $this->client->writeOne($this->grammar->compileDropTable($tableName, $this->getOnCluster(), true));
     }
 }
