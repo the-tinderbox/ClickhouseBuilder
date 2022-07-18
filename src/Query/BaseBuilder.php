@@ -179,11 +179,7 @@ abstract class BaseBuilder
      */
     public function getCountQuery()
     {
-        $without = ['columns' => [], 'limit' => null];
-
-        if (empty($this->groups)) {
-            $without['orders'] = [];
-        }
+        $without = ['columns' => [], 'limit' => null, 'orders' => []];
 
         return $this->cloneWithout($without)->select(raw('count() as `count`'));
     }
