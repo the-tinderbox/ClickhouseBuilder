@@ -582,7 +582,7 @@ class BuilderTest extends TestCase
         $element->firstElement('a');
         $element->operator('=');
         $element->secondElement('b');
-        $element->concatOperator(Operator:: OR);
+        $element->concatOperator(Operator::OR);
 
         $builder->where($element);
         $this->assertEquals('SELECT * WHERE \'a\' = \'b\'', $builder->toSql());
@@ -592,13 +592,13 @@ class BuilderTest extends TestCase
         $element->firstElement('a');
         $element->operator('=');
         $element->secondElement('b');
-        $element->concatOperator(Operator:: OR);
+        $element->concatOperator(Operator::OR);
 
         $element2 = new TwoElementsLogicExpression($builder);
         $element2->firstElement('c');
         $element2->operator('=');
         $element2->secondElement('d');
-        $element2->concatOperator(Operator:: OR);
+        $element2->concatOperator(Operator::OR);
 
         $builder->where($element, '=', $element2);
         $this->assertEquals('SELECT * WHERE \'a\' = \'b\' = \'c\' = \'d\'', $builder->toSql());
