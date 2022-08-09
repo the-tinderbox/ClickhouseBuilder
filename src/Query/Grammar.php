@@ -140,11 +140,11 @@ class Grammar
     /**
      * Compiles create table query.
      *
-     * @param               $tableName
-     * @param string        $engine
-     * @param array         $structure
-     * @param string|null   $clusterName
-     * @param bool          $ifNotExists
+     * @param             $tableName
+     * @param string      $engine
+     * @param array       $structure
+     * @param string|null $clusterName
+     * @param bool        $ifNotExists
      *
      * @return string
      */
@@ -160,9 +160,9 @@ class Grammar
     /**
      * Compiles drop table query.
      *
-     * @param               $tableName
-     * @param string|null   $clusterName
-     * @param bool          $ifExists
+     * @param             $tableName
+     * @param string|null $clusterName
+     * @param bool        $ifExists
      *
      * @return string
      */
