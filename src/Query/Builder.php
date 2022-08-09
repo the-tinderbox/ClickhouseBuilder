@@ -199,7 +199,7 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * Executes query to drop table
+     * Executes query to drop table.
      *
      * @param $tableName
      *

@@ -140,11 +140,11 @@ class Grammar
     /**
      * Compiles create table query.
      *
-     * @param        $tableName
-     * @param string $engine
-     * @param array $structure
-     * @param string|null $clusterName
-     * @param bool $ifNotExists
+     * @param               $tableName
+     * @param string        $engine
+     * @param array         $structure
+     * @param string|null   $clusterName
+     * @param bool          $ifNotExists
      *
      * @return string
      */
@@ -154,26 +154,15 @@ class Grammar
             $tableName = (string) $tableName;
         }
 
-        $sql = "CREATE TABLE ";
-        if ($ifNotExists) {
-            $sql .= "IF NOT EXISTS ";
-        }
-
-        $sql .= $tableName;
-        if (!is_null($clusterName)) {
-            $sql .= " ON CLUSTER {$clusterName}";
-        }
-        $sql .= " ({$this->compileTableStructure($structure)}) ENGINE = {$engine}";
-
-        return $sql;
+        return 'CREATE TABLE '.($ifNotExists ? 'IF NOT EXISTS ' : '')."{$tableName}".(!is_null($clusterName) ? ' ON CLUSTER '.$clusterName : '')." ({$this->compileTableStructure($structure)}) ENGINE = {$engine}";
     }
 
     /**
      * Compiles drop table query.
      *
-     * @param      $tableName
-     * @param string|null $clusterName
-     * @param bool $ifExists
+     * @param               $tableName
+     * @param string|null   $clusterName
+     * @param bool          $ifExists
      *
      * @return string
      */
@@ -183,17 +172,7 @@ class Grammar
             $tableName = (string) $tableName;
         }
 
-        $sql = "DROP TABLE ";
-        if ($ifExists) {
-            $sql .= "IF EXISTS ";
-        }
-
-        $sql .= $tableName;
-        if (!is_null($clusterName)) {
-            $sql .= " ON CLUSTER {$clusterName}";
-        }
-
-        return $sql;
+        return 'DROP TABLE '.($ifExists ? 'IF EXISTS ' : '')."{$tableName}".(!is_null($clusterName) ? ' ON CLUSTER '.$clusterName : '');
     }
 
     /**
