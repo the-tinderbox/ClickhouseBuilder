@@ -10,8 +10,11 @@ if (!function_exists('tap')) {
      *
      * @return mixed
      */
-    function tap($value, $callback)
+    function tap($value, $callback = null)
     {
+        if (is_null($callback)) {
+            return new \Illuminate\Support\HigherOrderTapProxy($value);
+        }
         $callback($value);
 
         return $value;
