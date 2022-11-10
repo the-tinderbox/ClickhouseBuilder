@@ -1,7 +1,7 @@
 <?php
 
 // @codeCoverageIgnoreStart
-if (!function_exists('tap')) {
+if (!function_exists('tp')) {
     /**
      * Call the given Closure with the given value then return the value.
      *
@@ -10,7 +10,7 @@ if (!function_exists('tap')) {
      *
      * @return mixed
      */
-    function tap($value, $callback)
+    function tp($value, $callback)
     {
         $callback($value);
 

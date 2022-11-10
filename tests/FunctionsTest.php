@@ -26,7 +26,7 @@ class FunctionsTest extends TestCase
             $result = 2;
         };
 
-        $returnedValue = tap($value, $callback);
+        $returnedValue = tp($value, $callback);
 
         $this->assertEquals($value, $returnedValue);
         $this->assertEquals(2, $result);

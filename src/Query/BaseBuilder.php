@@ -197,7 +197,7 @@ abstract class BaseBuilder
      */
     public function cloneWithout(array $except)
     {
-        return tap(
+        return tp(
             clone $this,
             function ($clone) use ($except) {
                 foreach ($except as $property => $value) {
@@ -258,7 +258,7 @@ abstract class BaseBuilder
                     $column->name($columnName);
                 }
 
-                $column = tap($column, $value);
+                $column = tp($column, $value);
 
                 if ($column->getSubQuery()) {
                     $column->query($column->getSubQuery());
@@ -389,7 +389,7 @@ abstract class BaseBuilder
     public function unionAll($query)
     {
         if ($query instanceof Closure) {
-            $query = tap($this->newQuery(), $query);
+            $query = tp($this->newQuery(), $query);
         }
 
         if ($query instanceof BaseBuilder) {
@@ -712,7 +712,7 @@ abstract class BaseBuilder
          * to just wrap this in parenthesis, otherwise - subquery.
          */
         if ($column instanceof Closure) {
-            $query = tap($this->newQuery(), $column);
+            $query = tp($this->newQuery(), $column);
 
             if (is_null($query->getFrom()) && empty($query->getColumns())) {
                 $expression->firstElement($query->{"get{$section}"}());
@@ -1638,7 +1638,7 @@ abstract class BaseBuilder
         }
 
         if ($asyncQueries instanceof Closure) {
-            $asyncQueries = tap($this->newQuery(), $asyncQueries);
+            $asyncQueries = tp($this->newQuery(), $asyncQueries);
         }
 
         if ($asyncQueries instanceof BaseBuilder) {

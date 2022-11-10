@@ -121,7 +121,7 @@ class TwoElementsLogicExpression
     public function firstElementQuery($query): self
     {
         if ($query instanceof \Closure) {
-            $query = tap($this->query->newQuery(), $query);
+            $query = tp($this->query->newQuery(), $query);
         }
 
         if ($query instanceof BaseBuilder) {
@@ -141,7 +141,7 @@ class TwoElementsLogicExpression
     public function secondElementQuery($query): self
     {
         if ($query instanceof \Closure) {
-            $query = tap($this->query->newQuery(), $query);
+            $query = tp($this->query->newQuery(), $query);
         }
 
         if ($query instanceof BaseBuilder) {
