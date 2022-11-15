@@ -66,7 +66,7 @@ class Column
     public function name($columnName): self
     {
         if ($columnName instanceof \Closure) {
-            $columnName = tap(new static($this->query), $columnName);
+            $columnName = tp(new static($this->query), $columnName);
         }
 
         if (is_string($columnName)) {
@@ -303,7 +303,7 @@ class Column
         }
 
         if ($query instanceof \Closure) {
-            $query = tap($this->query->newQuery(), $query);
+            $query = tp($this->query->newQuery(), $query);
         }
 
         if ($query instanceof BaseBuilder) {
