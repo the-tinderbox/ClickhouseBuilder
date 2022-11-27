@@ -140,37 +140,47 @@ class Grammar
     /**
      * Compiles create table query.
      *
-     * @param        $tableName
-     * @param string $engine
-     * @param array  $structure
-     * @param bool   $ifNotExists
+     * @param             $tableName
+     * @param string      $engine
+     * @param array       $structure
+     * @param bool        $ifNotExists
+     * @param string|null $clusterName
+     * @param string|null $extraOptions
      *
      * @return string
      */
-    public function compileCreateTable($tableName, string $engine, array $structure, $ifNotExists = false): string
+    public function compileCreateTable($tableName, string $engine, array $structure, bool $ifNotExists = false, ?string $clusterName = null, ?string $extraOptions = null): string
     {
         if ($tableName instanceof Identifier) {
             $tableName = (string) $tableName;
         }
 
-        return 'CREATE TABLE '.($ifNotExists ? 'IF NOT EXISTS ' : '')."{$tableName} ({$this->compileTableStructure($structure)}) ENGINE = {$engine}";
+        $onCluster = $clusterName === null ? '' : "ON CLUSTER {$clusterName}";
+        $extraOptions = $extraOptions ?? '';
+
+        return 'CREATE TABLE '
+            .($ifNotExists ? 'IF NOT EXISTS ' : '')
+            .rtrim("{$tableName} {$onCluster} ({$this->compileTableStructure($structure)}) ENGINE = {$engine} {$extraOptions}");
     }
 
     /**
      * Compiles drop table query.
      *
-     * @param      $tableName
-     * @param bool $ifExists
+     * @param             $tableName
+     * @param bool        $ifExists
+     * @param string|null $clusterName
      *
      * @return string
      */
-    public function compileDropTable($tableName, $ifExists = false): string
+    public function compileDropTable($tableName, bool $ifExists = false, ?string $clusterName = null): string
     {
         if ($tableName instanceof Identifier) {
             $tableName = (string) $tableName;
         }
 
-        return 'DROP TABLE '.($ifExists ? 'IF EXISTS ' : '')."{$tableName}";
+        $onCluster = $clusterName === null ? '' : "ON CLUSTER {$clusterName}";
+
+        return trim('DROP TABLE '.($ifExists ? 'IF EXISTS ' : '')."{$tableName} {$onCluster}");
     }
 
     /**

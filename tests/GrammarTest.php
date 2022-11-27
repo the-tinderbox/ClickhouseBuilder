@@ -409,4 +409,29 @@ class GrammarTest extends TestCase
 
         $grammar->compileDelete($builder);
     }
+
+    public function testCompileCreateTable()
+    {
+        $grammar = new Grammar();
+
+        $sql = $grammar->compileCreateTable('table', 'MergeTree', ['id' => 'UInt64'], true, 'test');
+        $this->assertEquals('CREATE TABLE IF NOT EXISTS table ON CLUSTER test (id UInt64) ENGINE = MergeTree', $sql);
+
+        $sql = $grammar->compileCreateTable('table', 'MergeTree', ['id' => 'UInt64'], false, 'test');
+        $this->assertEquals('CREATE TABLE table ON CLUSTER test (id UInt64) ENGINE = MergeTree', $sql);
+
+        $sql = $grammar->compileCreateTable('table', 'MergeTree', ['id' => 'UInt64'], false);
+        $this->assertEquals('CREATE TABLE table  (id UInt64) ENGINE = MergeTree', $sql);
+    }
+
+    public function testCompileDropTable()
+    {
+        $grammar = new Grammar();
+
+        $sql = $grammar->compileDropTable('table', true, 'test');
+        $this->assertEquals('DROP TABLE IF EXISTS table ON CLUSTER test', $sql);
+
+        $sql = $grammar->compileDropTable('table', false);
+        $this->assertEquals('DROP TABLE table', $sql);
+    }
 }
