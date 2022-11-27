@@ -140,37 +140,39 @@ class Grammar
     /**
      * Compiles create table query.
      *
-     * @param        $tableName
-     * @param string $engine
-     * @param array  $structure
-     * @param bool   $ifNotExists
+     * @param             $tableName
+     * @param string      $engine
+     * @param array       $structure
+     * @param string|null $clusterName
+     * @param bool        $ifNotExists
      *
      * @return string
      */
-    public function compileCreateTable($tableName, string $engine, array $structure, $ifNotExists = false): string
+    public function compileCreateTable($tableName, string $engine, array $structure, string $clusterName = null, $ifNotExists = false): string
     {
         if ($tableName instanceof Identifier) {
             $tableName = (string) $tableName;
         }
 
-        return 'CREATE TABLE '.($ifNotExists ? 'IF NOT EXISTS ' : '')."{$tableName} ({$this->compileTableStructure($structure)}) ENGINE = {$engine}";
+        return 'CREATE TABLE '.($ifNotExists ? 'IF NOT EXISTS ' : '')."{$tableName}".(!is_null($clusterName) ? ' ON CLUSTER '.$clusterName : '')." ({$this->compileTableStructure($structure)}) ENGINE = {$engine}";
     }
 
     /**
      * Compiles drop table query.
      *
-     * @param      $tableName
-     * @param bool $ifExists
+     * @param             $tableName
+     * @param string|null $clusterName
+     * @param bool        $ifExists
      *
      * @return string
      */
-    public function compileDropTable($tableName, $ifExists = false): string
+    public function compileDropTable($tableName, string $clusterName = null, $ifExists = false): string
     {
         if ($tableName instanceof Identifier) {
             $tableName = (string) $tableName;
         }
 
-        return 'DROP TABLE '.($ifExists ? 'IF EXISTS ' : '')."{$tableName}";
+        return 'DROP TABLE '.($ifExists ? 'IF EXISTS ' : '')."{$tableName}".(!is_null($clusterName) ? ' ON CLUSTER '.$clusterName : '');
     }
 
     /**

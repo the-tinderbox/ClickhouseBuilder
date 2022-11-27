@@ -4,14 +4,17 @@ namespace Tinderbox\ClickhouseBuilder\Query;
 
 use Tinderbox\Clickhouse\Client;
 use Tinderbox\Clickhouse\Common\Format;
+use Tinderbox\Clickhouse\Interfaces\FileInterface;
 use Tinderbox\Clickhouse\Query;
+use Tinderbox\Clickhouse\Query\Result;
+use Tinderbox\ClickhouseBuilder\Exceptions\GrammarException;
 
 class Builder extends BaseBuilder
 {
     /**
      * Client which is used to perform queries.
      *
-     * @var \Tinderbox\Clickhouse\Client
+     * @var Client
      */
     protected $client;
 
@@ -31,7 +34,7 @@ class Builder extends BaseBuilder
      *
      * @param array $settings
      *
-     * @return \Tinderbox\Clickhouse\Query\Result|\Tinderbox\Clickhouse\Query\Result[]
+     * @return Result|Result[]
      */
     public function get(array $settings = [])
     {
@@ -105,10 +108,10 @@ class Builder extends BaseBuilder
     /**
      * Insert in table data from files.
      *
-     * @param array                                                 $columns
-     * @param string|\Tinderbox\Clickhouse\Interfaces\FileInterface $file
-     * @param string                                                $format
-     * @param array                                                 $settings
+     * @param array                $columns
+     * @param string|FileInterface $file
+     * @param string               $format
+     * @param array                $settings
      *
      * @return bool
      */
@@ -126,11 +129,11 @@ class Builder extends BaseBuilder
      *
      * @param array $values
      *
-     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
+     * @throws GrammarException
      *
      * @return bool
      */
-    public function insert(array $values)
+    public function insert(array $values): bool
     {
         if (empty($values)) {
             return false;
@@ -156,11 +159,11 @@ class Builder extends BaseBuilder
     /**
      * Performs ALTER TABLE `table` DELETE query.
      *
-     * @throws \Tinderbox\ClickhouseBuilder\Exceptions\GrammarException
+     * @throws GrammarException
      *
      * @return bool
      */
-    public function delete()
+    public function delete(): bool
     {
         return $this->client->writeOne(
             $this->grammar->compileDelete($this)
@@ -176,9 +179,9 @@ class Builder extends BaseBuilder
      *
      * @return bool
      */
-    public function createTable($tableName, string $engine, array $structure)
+    public function createTable($tableName, string $engine, array $structure): bool
     {
-        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure));
+        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, $this->getOnCluster()));
     }
 
     /**
@@ -190,18 +193,32 @@ class Builder extends BaseBuilder
      *
      * @return bool
      */
-    public function createTableIfNotExists($tableName, string $engine, array $structure)
+    public function createTableIfNotExists($tableName, string $engine, array $structure): bool
     {
-        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, true));
+        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, $this->getOnCluster(), true));
     }
 
-    public function dropTable($tableName)
+    /**
+     * Executes query to drop table.
+     *
+     * @param $tableName
+     *
+     * @return bool
+     */
+    public function dropTable($tableName): bool
     {
-        return $this->client->writeOne($this->grammar->compileDropTable($tableName));
+        return $this->client->writeOne($this->grammar->compileDropTable($tableName, $this->getOnCluster()));
     }
 
-    public function dropTableIfExists($tableName)
+    /**
+     * Executes query to drop table if table exists.
+     *
+     * @param $tableName
+     *
+     * @return bool
+     */
+    public function dropTableIfExists($tableName): bool
     {
-        return $this->client->writeOne($this->grammar->compileDropTable($tableName, true));
+        return $this->client->writeOne($this->grammar->compileDropTable($tableName, $this->getOnCluster(), true));
     }
 }
