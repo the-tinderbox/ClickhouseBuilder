@@ -27,6 +27,14 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * @return \Tinderbox\Clickhouse\Client
+     */
+    public function getClient(): Client
+    {
+        return $this->client;
+    }
+
+    /**
      * Perform compiled from builder sql query and getting result.
      *
      * @param array $settings
