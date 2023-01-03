@@ -113,6 +113,18 @@ trait ColumnCompiler
     }
 
     /**
+     * Compiles max function on column.
+     *
+     * @param $column
+     *
+     * @return string
+     */
+    private function max($column)
+    {
+        return "max({$column})";
+    }
+
+    /**
      * Compiles round function on column.
      *
      * @param $column

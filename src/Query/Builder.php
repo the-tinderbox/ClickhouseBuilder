@@ -27,6 +27,14 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * @return \Tinderbox\Clickhouse\Client
+     */
+    public function getClient(): Client
+    {
+        return $this->client;
+    }
+
+    /**
      * Perform compiled from builder sql query and getting result.
      *
      * @param array $settings
@@ -176,9 +184,9 @@ class Builder extends BaseBuilder
      *
      * @return bool
      */
-    public function createTable($tableName, string $engine, array $structure)
+    public function createTable($tableName, string $engine, array $structure, ?string $extraOptions = null)
     {
-        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure));
+        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, false, $this->getOnCluster(), $extraOptions));
     }
 
     /**
@@ -190,9 +198,9 @@ class Builder extends BaseBuilder
      *
      * @return bool
      */
-    public function createTableIfNotExists($tableName, string $engine, array $structure)
+    public function createTableIfNotExists($tableName, string $engine, array $structure, ?string $extraOptions = null)
     {
-        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, true));
+        return $this->client->writeOne($this->grammar->compileCreateTable($tableName, $engine, $structure, true, $this->getOnCluster(), $extraOptions));
     }
 
     public function dropTable($tableName)

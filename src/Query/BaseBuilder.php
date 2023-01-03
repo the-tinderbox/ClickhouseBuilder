@@ -137,9 +137,9 @@ abstract class BaseBuilder
     /**
      * Cluster name.
      *
-     * @var string
+     * @var string|null
      */
-    protected $onCluster;
+    protected $onCluster = null;
 
     /**
      * File representing values which should be inserted in table.
@@ -147,10 +147,6 @@ abstract class BaseBuilder
      * @var FileInterface
      */
     protected $values;
-
-    protected $clusterName;
-
-    protected $serverHostname;
 
     /**
      * Set columns for select statement.

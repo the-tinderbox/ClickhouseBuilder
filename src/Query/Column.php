@@ -213,6 +213,24 @@ class Column
     }
 
     /**
+     * Apply max function to column.
+     *
+     * @param string|Expression|null $columnName
+     *
+     * @return $this
+     */
+    public function max($columnName = null): self
+    {
+        if ($columnName !== null) {
+            $this->name($columnName);
+        }
+
+        $this->functions[] = ['function' => 'max'];
+
+        return $this;
+    }
+
+    /**
      * Apply round function to column.
      *
      * @param int $decimals

@@ -102,6 +102,21 @@ class ColumnTest extends TestCase
         ], $functions);
     }
 
+    public function testMax()
+    {
+        $column = new Column($this->getBuilder());
+        $column->name('column');
+        $column->max();
+
+        $functions = $column->getFunctions();
+
+        $this->assertEquals([
+            [
+                'function' => 'max',
+            ],
+        ], $functions);
+    }
+
     public function testRound()
     {
         $column = new Column($this->getBuilder());
