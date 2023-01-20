@@ -703,7 +703,7 @@ class BuilderTest extends TestCase
         $this->assertEquals('SELECT count() as `count` FROM `table`', $builder->toSql());
 
         $builder = $this->getBuilder()->from('table')->select('column1', 'column2', 'column3')->groupBy('column2')->orderBy('column1')->limit(10)->getCountQuery();
-        $this->assertEquals('SELECT count() as `count` FROM `table` GROUP BY `column2` ORDER BY `column1` ASC', $builder->toSql());
+        $this->assertEquals('SELECT count() as `count` FROM `table` GROUP BY `column2`', $builder->toSql());
     }
 
     public function test_group_by()
