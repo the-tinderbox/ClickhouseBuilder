@@ -1048,15 +1048,34 @@ abstract class BaseBuilder
     /**
      * Add where statement.
      *
-     * @param TwoElementsLogicExpression|string|Closure|self $column
-     * @param mixed                                          $operator
-     * @param mixed                                          $value
-     * @param string                                         $concatOperator
+     * @param TwoElementsLogicExpression|string|array|Closure|self $column
+     * @param mixed                                                $operator
+     * @param mixed                                                $value
+     * @param string                                               $concatOperator
      *
      * @return static
      */
     public function where($column, $operator = null, $value = null, string $concatOperator = Operator::AND)
     {
+        if (is_array($column)) {
+            // only support `and` and `or` concat
+            if ($concatOperator == Operator:: AND) {
+                $this->where(function ($query) use ($column) {
+                    foreach ($column as $item) { // unpacking argument
+                        $query->where(...$item);
+                    }
+                });
+            } elseif ($concatOperator == Operator:: OR) {
+                $this->orWhere(function ($query) use ($column) {
+                    foreach ($column as $item) { // unpacking argument
+                        $query->where(...$item);
+                    }
+                });
+            }
+
+            return $this;
+        }
+
         list($value, $operator) = $this->prepareValueAndOperator($value, $operator, func_num_args() == 2);
 
         $this->wheres[] = $this->assembleTwoElementsLogicExpression(
