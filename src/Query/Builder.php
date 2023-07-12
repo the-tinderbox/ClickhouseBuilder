@@ -72,7 +72,6 @@ class Builder extends BaseBuilder
     {
         if (!empty($this->groups)) {
             $subThis = clone $this;
-            $subThis->select($subThis->groups[0]);
             return $this->newQuery()->from($subThis)->count();
         } else {
             $builder = $this->getCountQuery();
