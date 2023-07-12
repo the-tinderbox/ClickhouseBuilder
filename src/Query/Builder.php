@@ -70,12 +70,12 @@ class Builder extends BaseBuilder
      */
     public function count()
     {
-        $builder = $this->getCountQuery();
-        $result = $builder->get();
-
         if (!empty($this->groups)) {
-            return count($result);
+            $subThis = clone $this;
+            return $this->newQuery()->from($subThis)->count();
         } else {
+            $builder = $this->getCountQuery();
+            $result = $builder->get();
             return $result[0]['count'] ?? 0;
         }
     }
