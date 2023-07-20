@@ -31,7 +31,7 @@ trait FromComponentCompiler
             $fromSection .= " AS {$this->wrap($alias)}";
         }
 
-        if (!is_null($final)) {
+        if ($final) {
             $fromSection .= ' FINAL';
         }
 
