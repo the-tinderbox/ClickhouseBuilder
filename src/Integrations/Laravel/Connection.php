@@ -326,7 +326,7 @@ class Connection extends \Illuminate\Database\Connection
     {
         $result = $this->getClient()->readOne($query, $tables);
 
-        $this->logQuery($result->getQuery()->getQuery(), [], $result->getStatistic()->getTime());
+        $this->logQuery($result->getQuery()->getQuery(), [], $result->getStatistic()->getTime() * 1000);
 
         $this->setLastQueryStatistic($result->getStatistic());
 
@@ -356,7 +356,7 @@ class Connection extends \Illuminate\Database\Connection
             /* @var Query $query */
             $query = $result->getQuery();
 
-            $this->logQuery($query->getQuery(), [], $result->getStatistic()->getTime());
+            $this->logQuery($query->getQuery(), [], $result->getStatistic()->getTime() * 1000);
 
             $results[$i] = $result->getRows();
             $statistic[$i] = $result->getStatistic();
