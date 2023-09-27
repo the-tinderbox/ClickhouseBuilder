@@ -1097,9 +1097,9 @@ abstract class BaseBuilder
     /**
      * Add where statement with OR operator.
      *
-     * @param      $column
-     * @param null $operator
-     * @param null $value
+     * @param       $column
+     * @param mixed $operator
+     * @param mixed $value
      *
      * @return static
      */
